@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "lawyer", "assistant", "client"] },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Case": {
+      "title": "Legal Case",
+      "description": "Information about a legal case file.",
+      "type": "object",
+      "properties": {
+        "caseNumber": { "type": "string" },
+        "clientName": { "type": "string" },
+        "opposingParty": { "type": "string" },
+        "jurisdiction": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed", "pending", "archived"] },
+        "assignedLawyerId": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "documents": {
+          "type": "array",
+          "items": { "$ref": "Document" }
+        }
+      },
+      "required": ["caseNumber", "clientName", "status"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task assigned to a user, optionally linked to a case.",
+      "type": "object",
+      "properties": {
+        "caseId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedUserId": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "isPersonal": { "type": "boolean" }
+      },
+      "required": ["title", "assignedUserId", "status"]
+    },
+    "Event": {
+      "title": "Calendar Event",
+      "description": "An event in the legal calendar.",
+      "type": "object",
+      "properties": {
+        "caseId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["hearing", "meeting", "deadline", "other"] },
+        "assignedUserIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "startTime", "endTime", "type"]
+    },
+    "Message": {
+      "title": "Collaboration Message",
+      "description": "A message in a global or private chat.",
+      "type": "object",
+      "properties": {
+        "chatId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "readBy": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["chatId", "authorId", "content", "timestamp", "readBy"]
+    },
+    "Document": {
+      "title": "Case Document",
+      "description": "Metadata for a document uploaded to a case.",
+      "type": "object",
+      "properties": {
+        "caseId": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "uploadedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["caseId", "name", "url", "uploadedBy"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles."
+    },
+    "/cases/{caseId}": {
+      "schema": "Case",
+      "description": "Legal case files."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Tasks and deadlines."
+    },
+    "/events/{eventId}": {
+      "schema": "Event",
+      "description": "Calendar events."
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Collaboration messages."
+    },
+    "/documents/{documentId}": {
+      "schema": "Document",
+      "description": "Case document metadata."
+    }
+  }
+}
