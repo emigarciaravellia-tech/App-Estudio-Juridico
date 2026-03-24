@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { auth, db } from '../firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -35,6 +36,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const sessionData = JSON.parse(savedSession);
         setProfile(sessionData);
+        // Ensure Firebase Auth is also signed in for Storage/Firestore rules
+        if (!auth.currentUser) {
+          signInAnonymously(auth).catch(err => console.error("Error signing in anonymously:", err));
+        }
       } catch (e) {
         localStorage.removeItem('lex_session');
       }
@@ -44,6 +49,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (username: string, password: string) => {
     console.log("Attempting login for:", username);
+    
+    // Sign in anonymously to Firebase Auth to satisfy rules for Storage/Firestore
+    try {
+      if (!auth.currentUser) {
+        await signInAnonymously(auth);
+      }
+    } catch (err) {
+      console.error("Error signing in anonymously during login:", err);
+    }
     
     // 1. Check against credentials collection
     const credsQuery = query(collection(db, 'credentials'), where('username', '==', username), where('password', '==', password));
@@ -92,15 +106,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           displayName: 'Administrador',
           role: 'admin'
         };
-        // Create the config in DB for future use
+        // Create the config, profile and credentials in DB for future use
         try {
           await setDoc(doc(db, 'admin_config', 'primary'), {
             username: 'admin',
             password: 'admin123'
           });
-          console.log("admin_config created successfully");
+          
+          // Also ensure they exist in the main collections for management
+          await setDoc(doc(db, 'users', 'admin-id'), {
+            email: 'admin@lexmanage.local',
+            displayName: 'Administrador',
+            role: 'admin',
+            createdAt: new Date().toISOString()
+          }, { merge: true });
+
+          await setDoc(doc(db, 'credentials', 'admin-cred'), {
+            username: 'admin',
+            password: 'admin123',
+            userId: 'admin-id'
+          }, { merge: true });
+
+          console.log("admin_config, profile and credentials created successfully");
         } catch (err) {
-          console.error("Error creating admin_config:", err);
+          console.error("Error creating admin setup:", err);
         }
         setProfile(adminProfile);
         localStorage.setItem('lex_session', JSON.stringify(adminProfile));

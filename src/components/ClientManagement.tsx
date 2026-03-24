@@ -238,7 +238,7 @@ export default function ClientManagement() {
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* List */}
-        <div className="lg:w-1/3 space-y-4">
+        <div className={`lg:w-1/3 space-y-4 ${viewingClient ? 'hidden lg:block' : 'block'}`}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
             <input 
@@ -276,7 +276,7 @@ export default function ClientManagement() {
         </div>
 
         {/* Details */}
-        <div className="lg:w-2/3">
+        <div className={`lg:w-2/3 ${viewingClient ? 'block' : 'hidden lg:block'}`}>
           <AnimatePresence mode="wait">
             {viewingClient ? (
               <motion.div 
@@ -284,8 +284,14 @@ export default function ClientManagement() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-white p-8 rounded-3xl border border-slate-100 shadow-xl"
+                className="bg-white p-4 md:p-8 rounded-3xl border border-slate-100 shadow-xl relative"
               >
+                <button 
+                  onClick={() => setViewingClient(null)}
+                  className="lg:hidden absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-full transition-all z-10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
                 <ClientDetails client={viewingClient} />
               </motion.div>
             ) : (
@@ -304,20 +310,20 @@ export default function ClientManagement() {
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+              className="bg-white w-full max-w-md h-full md:h-auto md:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between">
+              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between sticky top-0 z-10">
                 <h3 className="text-xl font-bold">{viewingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-indigo-800 rounded-full transition-all">
                   <X className="h-6 w-6" />
                 </button>
               </div>
-              <form onSubmit={handleSave} className="p-6 space-y-4">
+              <form onSubmit={handleSave} className="p-6 space-y-4 flex-1 overflow-y-auto">
                 {error && (
                   <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
                     {error}

@@ -5,7 +5,7 @@ import { db, storage, handleFirestoreError, OperationType } from '../firebase';
 import { Case, FollowUp, UserProfile, DocumentMetadata } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
-import { Plus, Search, Filter, Edit2, Trash2, X, ChevronRight, Save, Calendar as CalendarIcon, User, FileText, Upload, Download, ExternalLink, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, X, ChevronRight, Save, Calendar as CalendarIcon, User, FileText, Upload, Download, ExternalLink, Loader2, Clock, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import ConfirmationModal from './ConfirmationModal';
@@ -46,6 +46,7 @@ export default function CaseManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<DocumentMetadata | null>(null);
 
   const [formData, setFormData] = useState<Partial<Case>>({
     caseNumber: '',
@@ -217,7 +218,8 @@ export default function CaseManagement() {
         name: file.name,
         url: downloadURL,
         uploadedBy: profile?.displayName || 'Usuario',
-        uploadedAt: new Date().toISOString()
+        uploadedAt: new Date().toISOString(),
+        contentType: file.type
       };
 
       await updateDoc(doc(db, 'cases', viewingCase.id), {
@@ -225,9 +227,19 @@ export default function CaseManagement() {
         updatedAt: new Date().toISOString()
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading file:', error);
-      setError('Error al subir el archivo. Verifique su conexión y permisos.');
+      let errorMessage = 'Error al subir el archivo.';
+      
+      if (error.code === 'storage/unauthorized') {
+        errorMessage = 'No tiene permisos para subir archivos. Verifique la configuración de Firebase Storage.';
+      } else if (error.code === 'storage/canceled') {
+        errorMessage = 'Carga cancelada.';
+      } else if (error.code === 'storage/unknown') {
+        errorMessage = 'Error desconocido al subir el archivo.';
+      }
+      
+      setError(errorMessage + ' ' + (error.message || ''));
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -395,7 +407,8 @@ export default function CaseManagement() {
 
       {/* Cases List */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
@@ -469,35 +482,96 @@ export default function CaseManagement() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredCases.map((c) => (
+            <div 
+              key={c.id} 
+              onClick={() => setViewingCase(c)}
+              className="p-4 space-y-3 active:bg-slate-50 transition-colors"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-bold text-indigo-600">{c.caseNumber || 'S/N'}</p>
+                  <h4 className="font-bold text-slate-900">{c.caseTitle || 'Sin carátula'}</h4>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                  c.status === 'activo' ? 'bg-indigo-100 text-indigo-700' :
+                  c.status === 'archivado' ? 'bg-slate-100 text-slate-700' :
+                  c.status === 'paralizado' ? 'bg-amber-100 text-amber-700' :
+                  c.status === 'cancelado' ? 'bg-red-100 text-red-700' :
+                  c.status === 'terminado' ? 'bg-emerald-100 text-emerald-700' :
+                  'bg-orange-100 text-orange-700'
+                }`}>
+                  {c.status}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-end">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <User className="h-3 w-3" />
+                    <span>{c.clientName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <Clock className="h-3 w-3" />
+                    <span>{format(new Date(c.updatedAt), 'dd/MM/yyyy')}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedCase(c);
+                      setFormData(c);
+                      setIsModalOpen(true);
+                    }}
+                    className="p-2 text-indigo-600 bg-indigo-50 rounded-lg"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={(e) => handleDelete(c.id, e)}
+                      className="p-2 text-red-600 bg-red-50 rounded-lg"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Case Details View (Modal) */}
       <AnimatePresence>
         {viewingCase && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, x: 100 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
-              className="bg-white w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              className="bg-white w-full max-w-5xl h-full md:h-[90vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">{viewingCase.caseNumber || 'Expediente sin número'}</h3>
-                  <p className="text-indigo-200 text-sm font-bold uppercase tracking-wider mt-1">Carátula: {viewingCase.caseTitle || '-'}</p>
-                  <p className="text-indigo-200 text-sm">{viewingCase.clientName} vs {viewingCase.opposingParty}</p>
+              <div className="p-4 md:p-6 bg-indigo-900 text-white flex items-center justify-between sticky top-0 z-10">
+                <div className="min-w-0">
+                  <h3 className="text-xl md:text-2xl font-bold truncate">{viewingCase.caseNumber || 'Expediente sin número'}</h3>
+                  <p className="text-indigo-200 text-[10px] md:text-sm font-bold uppercase tracking-wider mt-1 truncate">Carátula: {viewingCase.caseTitle || '-'}</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                   <button 
                     onClick={() => {
                       setSelectedCase(viewingCase);
                       setFormData(viewingCase);
                       setIsModalOpen(true);
                     }}
-                    className="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-600 px-4 py-2 rounded-xl transition-all"
+                    className="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 md:px-4 md:py-2 rounded-xl transition-all text-xs md:text-sm"
                   >
                     <Edit2 className="h-4 w-4" />
-                    Editar Expediente
+                    <span className="hidden sm:inline">Editar</span>
                   </button>
                   <button onClick={() => setViewingCase(null)} className="p-2 hover:bg-indigo-800 rounded-full transition-all">
                     <X className="h-6 w-6" />
@@ -505,10 +579,10 @@ export default function CaseManagement() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                 {/* Left Column: Info */}
-                <div className="lg:col-span-2 space-y-8">
-                  <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="lg:col-span-2 space-y-6 md:space-y-8">
+                  <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="bg-slate-50 p-6 rounded-2xl space-y-4">
                       <h4 className="font-bold text-slate-900 border-b border-slate-200 pb-2">Datos del Proceso</h4>
                       <div className="grid grid-cols-2 gap-4 text-sm">
@@ -651,6 +725,13 @@ export default function CaseManagement() {
                               </div>
                             </div>
                             <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => setPreviewDoc(doc)}
+                                className="p-2 text-slate-400 hover:text-indigo-600 transition-all"
+                                title="Previsualizar"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
                               <a 
                                 href={doc.url} 
                                 target="_blank" 
@@ -678,15 +759,84 @@ export default function CaseManagement() {
         )}
       </AnimatePresence>
 
-      {/* New/Edit Case Modal */}
+      {/* Document Preview Modal */}
       <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        {previewDoc && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              className="bg-white w-full max-w-5xl h-full md:h-[90vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-slate-400" />
+                  <h3 className="font-bold truncate max-w-md">{previewDoc.name}</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a 
+                    href={previewDoc.url} 
+                    download={previewDoc.name}
+                    className="p-2 hover:bg-slate-800 rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
+                  >
+                    <Download className="h-4 w-4" />
+                    Descargar
+                  </a>
+                  <button onClick={() => setPreviewDoc(null)} className="p-2 hover:bg-slate-800 rounded-full transition-all">
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 bg-slate-100 overflow-hidden flex items-center justify-center">
+                {previewDoc.contentType?.startsWith('image/') ? (
+                  <img 
+                    src={previewDoc.url} 
+                    alt={previewDoc.name} 
+                    className="max-w-full max-h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : previewDoc.contentType === 'application/pdf' ? (
+                  <iframe 
+                    src={previewDoc.url} 
+                    className="w-full h-full border-none"
+                    title={previewDoc.name}
+                  />
+                ) : (
+                  <div className="text-center space-y-4 p-8">
+                    <div className="h-20 w-20 bg-white rounded-3xl shadow-sm border border-slate-200 flex items-center justify-center mx-auto">
+                      <FileText className="h-10 w-10 text-slate-300" />
+                    </div>
+                    <div>
+                      <p className="text-slate-900 font-bold">Vista previa no disponible</p>
+                      <p className="text-slate-500 text-sm">Este tipo de archivo ({previewDoc.contentType || 'desconocido'}) no se puede previsualizar directamente.</p>
+                    </div>
+                    <a 
+                      href={previewDoc.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+                    >
+                      <ExternalLink className="h-5 w-5" />
+                      Abrir en nueva pestaña
+                    </a>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* New/Edit Case Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white w-full max-w-4xl h-full md:max-h-[90vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
             >
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-indigo-900 text-white">
                 <h3 className="text-xl font-bold">{selectedCase ? 'Editar Expediente' : 'Nuevo Expediente'}</h3>

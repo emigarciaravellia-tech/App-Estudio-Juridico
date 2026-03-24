@@ -61,6 +61,14 @@ export interface Case {
   documents?: DocumentMetadata[];
 }
 
+export interface TaskHistoryEntry {
+  id: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  changedBy: string;
+  changedByName?: string;
+  timestamp: string;
+}
+
 export interface Task {
   id: string;
   caseId?: string;
@@ -70,6 +78,14 @@ export interface Task {
   dueDate: string;
   status: 'pending' | 'in-progress' | 'completed';
   isPersonal: boolean;
+  history?: TaskHistoryEntry[];
+  isRecurring?: boolean;
+  recurrence?: {
+    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval: number;
+    endDate?: string;
+  };
+  parentId?: string; // For recurring instances
 }
 
 export interface Event {
@@ -81,6 +97,13 @@ export interface Event {
   endTime: string;
   type: 'hearing' | 'meeting' | 'deadline' | 'other';
   assignedUserIds: string[];
+  isRecurring?: boolean;
+  recurrence?: {
+    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval: number;
+    endDate?: string;
+  };
+  parentId?: string;
 }
 
 export interface Message {
@@ -100,6 +123,7 @@ export interface DocumentMetadata {
   url: string;
   uploadedBy: string;
   uploadedAt: string;
+  contentType?: string;
 }
 
 export interface Credential {
