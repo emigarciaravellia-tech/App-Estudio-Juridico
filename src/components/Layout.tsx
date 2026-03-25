@@ -15,7 +15,8 @@ import {
   Scale,
   Menu,
   X,
-  Shield
+  Shield,
+  Receipt
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -33,8 +34,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const count = snapshot.docs.filter(doc => {
         const data = doc.data();
+        const chatId = data.chatId || '';
         const readBy = data.readBy || [];
-        return !readBy.includes(profile.uid);
+        
+        // Only count unread messages from chats the user is part of
+        const isGlobal = chatId === 'global';
+        const isParticipant = chatId.includes(profile.uid);
+        
+        return (isGlobal || isParticipant) && !readBy.includes(profile.uid);
       }).length;
       setUnreadCount(count);
     }, (error) => {
@@ -50,6 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Clientes', path: '/clients', icon: Users, roles: ['admin', 'lawyer', 'assistant'] },
     { name: 'Calendario', path: '/calendar', icon: CalendarIcon, roles: ['admin', 'lawyer', 'assistant'] },
     { name: 'Tareas', path: '/tasks', icon: CheckSquare, roles: ['admin', 'lawyer', 'assistant'] },
+    { name: 'Facturación', path: '/billing', icon: Receipt, roles: ['admin', 'lawyer'] },
     { name: 'Mensajes', path: '/collaboration', icon: MessageSquare, roles: ['admin', 'lawyer', 'assistant'], badge: unreadCount > 0 },
     { name: 'Usuarios', path: '/users', icon: Shield, roles: ['admin'] },
   ];

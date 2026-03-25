@@ -132,3 +132,30 @@ export interface Credential {
   password: string;
   userId: string;
 }
+
+export interface Invoice {
+  id: string;
+  caseId: string;
+  clientId: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'paid' | 'cancelled' | 'partial';
+  dueDate: string;
+  issueDate: string;
+  description: string;
+  items: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }[];
+  payments: {
+    id: string;
+    amount: number;
+    date: string;
+    method: 'cash' | 'transfer' | 'card' | 'other';
+    reference?: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}

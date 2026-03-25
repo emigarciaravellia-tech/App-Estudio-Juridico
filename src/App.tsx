@@ -9,6 +9,7 @@ import UserManagement from './components/UserManagement';
 import Calendar from './components/Calendar';
 import TaskManagement from './components/TaskManagement';
 import ClientManagement from './components/ClientManagement';
+import BillingManagement from './components/BillingManagement';
 import Auth from './components/Auth';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -36,6 +37,7 @@ export default function App() {
                     <Route path="/cases" element={<CaseManagement />} />
                     <Route path="/collaboration" element={<Collaboration />} />
                     <Route path="/tasks" element={<TaskManagement />} />
+                    <Route path="/billing" element={<BillingManagement />} />
                     <Route path="/calendar" element={<Calendar />} />
                     <Route path="/clients" element={<ClientManagement />} />
                     <Route path="/users" element={<UserManagement />} />

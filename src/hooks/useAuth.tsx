@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user: profile ? { uid: profile.uid, displayName: profile.displayName || '' } : null,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin',
+    isAdmin: profile?.role === 'admin' && (profile?.uid === 'admin-id' || profile?.email === 'admin@lexmanage.local'),
     isLawyer: profile?.role === 'lawyer',
     isAssistant: profile?.role === 'assistant',
     login,

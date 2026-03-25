@@ -319,10 +319,11 @@ export default function UserManagement() {
                           className="text-sm bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
                           value={user.role}
                           onChange={(e) => handleRoleChange(user.uid, e.target.value as UserRole)}
+                          disabled={user.uid !== currentUser?.uid && user.role === 'admin'}
                         >
-                          <option value="admin">Admin</option>
                           <option value="lawyer">Abogado</option>
                           <option value="assistant">Asistente</option>
+                          {user.role === 'admin' && <option value="admin">Admin</option>}
                         </select>
                         {user.uid !== currentUser?.uid && (
                           <button 
@@ -374,10 +375,11 @@ export default function UserManagement() {
                         className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
                         value={user.role}
                         onChange={(e) => handleRoleChange(user.uid, e.target.value as UserRole)}
+                        disabled={user.uid !== currentUser?.uid && user.role === 'admin'}
                       >
-                        <option value="admin">Admin</option>
                         <option value="lawyer">Abogado</option>
                         <option value="assistant">Asistente</option>
+                        {user.role === 'admin' && <option value="admin">Admin</option>}
                       </select>
                     </div>
                     {user.uid !== currentUser?.uid && (
@@ -511,8 +513,8 @@ export default function UserManagement() {
                   <label className="text-xs font-bold text-slate-500 uppercase">Rol</label>
                   <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value as UserRole})}>
                     <option value="lawyer">Abogado</option>
-                    <option value="admin">Admin</option>
                     <option value="assistant">Asistente</option>
+                    {formData.role === 'admin' && <option value="admin">Admin</option>}
                   </select>
                 </div>
                 <button type="submit" className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl mt-4 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">

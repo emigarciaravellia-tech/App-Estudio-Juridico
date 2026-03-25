@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { collection, query, limit, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, limit, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Case, Task, Event } from '../types';
+import { Case, Task, Event, Invoice } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [recentCases, setRecentCases] = useState<Case[]>([]);
   const [pendingTasks, setPendingTasks] = useState<Task[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [upcomingInvoices, setUpcomingInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -67,10 +68,29 @@ export default function Dashboard() {
       handleFirestoreError(error, OperationType.LIST, 'events');
     });
 
+    // Upcoming Invoices (Vencimientos de facturas en la próxima semana)
+    const nextWeek = addDays(new Date(), 7).toISOString();
+    const today = new Date().toISOString();
+    const invoicesQuery = query(
+      collection(db, 'invoices'),
+      where('dueDate', '<=', nextWeek),
+      where('dueDate', '>=', today),
+      orderBy('dueDate', 'asc')
+    );
+    const unsubscribeInvoices = onSnapshot(invoicesQuery, (snapshot) => {
+      const invoices = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Invoice))
+        .filter(inv => inv.status === 'pending' || inv.status === 'partial');
+      setUpcomingInvoices(invoices);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'invoices');
+    });
+
     return () => {
       unsubscribeCases();
       unsubscribeTasks();
       unsubscribeEvents();
+      unsubscribeInvoices();
     };
   }, [profile]);
 
@@ -154,6 +174,53 @@ export default function Dashboard() {
               )}
             </div>
           </section>
+
+          {/* Upcoming Invoices */}
+          {upcomingInvoices.length > 0 && (
+            <section className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-emerald-50/30">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900">Facturas por Vencer</h3>
+                </div>
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Semana actual</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {upcomingInvoices.map((invoice) => (
+                  <motion.div 
+                    key={invoice.id} 
+                    whileHover={{ x: 5 }}
+                    onClick={() => navigate('/billing')}
+                    className="p-6 flex items-center justify-between group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex flex-col items-center justify-center">
+                        <span className="text-[10px] font-bold uppercase">{format(new Date(invoice.dueDate), 'MMM', { locale: es })}</span>
+                        <span className="text-lg font-black leading-none">{format(new Date(invoice.dueDate), 'd')}</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                          Factura #{invoice.id.slice(-6).toUpperCase()}
+                        </p>
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {invoice.amount.toLocaleString('es-AR', { style: 'currency', currency: invoice.currency })} • {invoice.status === 'partial' ? 'Pago Parcial' : 'Pendiente'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-black text-slate-900">
+                        {invoice.amount.toLocaleString('es-AR', { style: 'currency', currency: invoice.currency })}
+                      </span>
+                      <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-emerald-600 transition-all" />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Quick Actions Grid */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4">

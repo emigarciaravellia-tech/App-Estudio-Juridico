@@ -90,6 +90,49 @@
         "uploadedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["caseId", "name", "url", "uploadedBy"]
+    },
+    "Invoice": {
+      "title": "Billing Invoice",
+      "description": "Information about a billing invoice for a client.",
+      "type": "object",
+      "properties": {
+        "caseId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "paid", "cancelled", "partial"] },
+        "dueDate": { "type": "string", "format": "date" },
+        "issueDate": { "type": "string", "format": "date" },
+        "description": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "quantity": { "type": "number" },
+              "unitPrice": { "type": "number" },
+              "total": { "type": "number" }
+            }
+          }
+        },
+        "payments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "amount": { "type": "number" },
+              "date": { "type": "string", "format": "date" },
+              "method": { "type": "string", "enum": ["cash", "transfer", "card", "other"] },
+              "reference": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clientId", "amount", "status", "issueDate"]
     }
   },
   "firestore": {
@@ -116,6 +159,10 @@
     "/documents/{documentId}": {
       "schema": "Document",
       "description": "Case document metadata."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Billing invoices and payments."
     }
   }
 }
