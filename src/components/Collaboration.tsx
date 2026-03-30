@@ -119,37 +119,24 @@ export default function Collaboration() {
       if (currentChatId === 'ai_assistant') {
         setIsTyping(true);
         try {
-          const { GoogleGenAI } = await import("@google/genai");
-          const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-          
-          const prompt = `Identidad y rol:
-          Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
-          Respondés solo consultas relacionadas al trabajo del estudio: derecho, cobranzas, expedientes, clientes y procedimientos.
-          Si te preguntan algo fuera de ese ámbito, lo declinás amablemente y reencauzás la conversación.
-
-          Tono y formato:
-          Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
-          Tus respuestas son justas en extensión: ni un párrafo escueto ni una enciclopedia.
-          IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave, ### para encabezados, listas para requisitos).
-
-          Contenido jurídico:
-          Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
-          Cuando des información legal, mencionás la fuente: artículo, ley, fallo o doctrina.
-          Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
-
-          Límites claros:
-          No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
-          No inventás jurisprudencia ni datos. Si no sabés, lo decís.
-          No compartís información de un cliente con consultas de otro.
-
-          Consulta del usuario (${profile.displayName}):
-          "${messageContent}"`;
-
-          const response = await genAI.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
+          const response = await fetch('/api/ai/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: messageContent,
+              userName: profile.displayName,
+            }),
           });
-          const text = response.text;
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al obtener respuesta de la IA');
+          }
+
+          const data = await response.json();
+          const text = data.text;
 
           await addDoc(collection(db, 'messages'), {
             chatId: 'ai_assistant',
