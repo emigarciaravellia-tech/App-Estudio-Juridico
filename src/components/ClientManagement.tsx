@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile, Case } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { Users, Plus, Search, Mail, Phone, FileText, ChevronRight, User, Trash2, Edit2, X, Briefcase } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -196,7 +196,7 @@ export default function ClientManagement() {
                       <FileText className="h-5 w-5" />
                     </div>
                     <div className="text-left">
-                      <p className="font-bold text-slate-900">{c.title}</p>
+                      <p className="font-bold text-slate-900">{c.caseTitle}</p>
                       <p className="text-xs text-slate-500">Exp: {c.caseNumber} • {c.status}</p>
                     </div>
                   </div>

@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 import { CheckSquare, Plus, Clock, AlertCircle, Trash2, CheckCircle2, Circle, PlayCircle, X, User as UserIcon, History } from 'lucide-react';
 import { format } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import ConfirmationModal from './ConfirmationModal';
 
 export default function TaskManagement() {

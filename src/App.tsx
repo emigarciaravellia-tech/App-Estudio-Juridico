@@ -11,6 +11,7 @@ import TaskManagement from './components/TaskManagement';
 import ClientManagement from './components/ClientManagement';
 import BillingManagement from './components/BillingManagement';
 import Auth from './components/Auth';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -23,31 +24,33 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Auth />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/cases" element={<CaseManagement />} />
-                    <Route path="/collaboration" element={<Collaboration />} />
-                    <Route path="/tasks" element={<TaskManagement />} />
-                    <Route path="/billing" element={<BillingManagement />} />
-                    <Route path="/calendar" element={<Calendar />} />
-                    <Route path="/clients" element={<ClientManagement />} />
-                    <Route path="/users" element={<UserManagement />} />
-                  </Routes>
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Auth />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/cases" element={<CaseManagement />} />
+                      <Route path="/collaboration" element={<Collaboration />} />
+                      <Route path="/tasks" element={<TaskManagement />} />
+                      <Route path="/billing" element={<BillingManagement />} />
+                      <Route path="/calendar" element={<Calendar />} />
+                      <Route path="/clients" element={<ClientManagement />} />
+                      <Route path="/users" element={<UserManagement />} />
+                    </Routes>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

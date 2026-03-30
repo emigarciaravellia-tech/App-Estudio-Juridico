@@ -18,7 +18,7 @@ import {
   Shield,
   Receipt
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { profile, loading, logout } = useAuth();

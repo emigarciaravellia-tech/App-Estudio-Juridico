@@ -25,7 +25,7 @@ import {
   ArrowRightLeft,
   Briefcase
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ConfirmationModal from './ConfirmationModal';

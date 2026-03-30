@@ -81,63 +81,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
 
-    // 2. Check against admin_config collection (legacy/admin fallback)
-    const q = query(collection(db, 'admin_config'), where('username', '==', username), where('password', '==', password));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      console.log("Found admin credentials in DB");
-      const adminProfile: UserProfile = {
-        uid: 'admin-id',
-        email: 'admin@lexmanage.local',
-        displayName: 'Administrador',
-        role: 'admin'
-      };
-      setProfile(adminProfile);
-      localStorage.setItem('lex_session', JSON.stringify(adminProfile));
-    } else {
-      console.log("No credentials in DB, checking fallback");
-      // Fallback for first time or if DB is empty
-      if (username === 'admin' && password === 'admin123') {
-        console.log("Fallback matched, creating admin_config");
-        const adminProfile: UserProfile = {
-          uid: 'admin-id',
-          email: 'admin@lexmanage.local',
-          displayName: 'Administrador',
-          role: 'admin'
-        };
-        // Create the config, profile and credentials in DB for future use
-        try {
-          await setDoc(doc(db, 'admin_config', 'primary'), {
-            username: 'admin',
-            password: 'admin123'
-          });
-          
-          // Also ensure they exist in the main collections for management
-          await setDoc(doc(db, 'users', 'admin-id'), {
-            email: 'admin@lexmanage.local',
-            displayName: 'Administrador',
-            role: 'admin',
-            createdAt: new Date().toISOString()
-          }, { merge: true });
-
-          await setDoc(doc(db, 'credentials', 'admin-cred'), {
-            username: 'admin',
-            password: 'admin123',
-            userId: 'admin-id'
-          }, { merge: true });
-
-          console.log("admin_config, profile and credentials created successfully");
-        } catch (err) {
-          console.error("Error creating admin setup:", err);
-        }
-        setProfile(adminProfile);
-        localStorage.setItem('lex_session', JSON.stringify(adminProfile));
-      } else {
-        console.log("Login failed: Invalid credentials");
-        throw new Error('Credenciales incorrectas');
-      }
-    }
+    console.log("Login failed: Invalid credentials");
+    throw new Error('Credenciales incorrectas');
   };
 
   const logout = () => {
@@ -149,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user: profile ? { uid: profile.uid, displayName: profile.displayName || '' } : null,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin' && (profile?.uid === 'admin-id' || profile?.email === 'admin@lexmanage.local'),
+    isAdmin: profile?.role === 'admin',
     isLawyer: profile?.role === 'lawyer',
     isAssistant: profile?.role === 'assistant',
     login,

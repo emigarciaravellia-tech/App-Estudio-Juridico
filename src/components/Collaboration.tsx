@@ -3,8 +3,9 @@ import { collection, onSnapshot, query, addDoc, where, orderBy, updateDoc, doc, 
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Message, UserProfile } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import ReactMarkdown from 'react-markdown';
 import { Send, User as UserIcon, MessageSquare, Users, Search, Circle, ChevronLeft, Trash2, MoreVertical, Paperclip, Smile } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -16,6 +17,7 @@ export default function Collaboration() {
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -24,7 +26,7 @@ export default function Collaboration() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
 
   // Fetch all users for private chats
   useEffect(() => {
@@ -99,16 +101,78 @@ export default function Collaboration() {
     e.preventDefault();
     if (!newMessage.trim() || !profile) return;
 
+    const messageContent = newMessage;
+    const currentChatId = selectedChatId;
+    setNewMessage('');
+
     try {
       await addDoc(collection(db, 'messages'), {
-        chatId: selectedChatId,
+        chatId: currentChatId,
         authorId: profile.uid,
         authorName: profile.displayName,
-        content: newMessage,
+        content: messageContent,
         timestamp: new Date().toISOString(),
         readBy: [profile.uid]
       });
-      setNewMessage('');
+
+      // Handle AI Assistant response
+      if (currentChatId === 'ai_assistant') {
+        setIsTyping(true);
+        try {
+          const { GoogleGenAI } = await import("@google/genai");
+          const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+          
+          const prompt = `Identidad y rol:
+          Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
+          Respondés solo consultas relacionadas al trabajo del estudio: derecho, cobranzas, expedientes, clientes y procedimientos.
+          Si te preguntan algo fuera de ese ámbito, lo declinás amablemente y reencauzás la conversación.
+
+          Tono y formato:
+          Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
+          Tus respuestas son justas en extensión: ni un párrafo escueto ni una enciclopedia.
+          IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave, ### para encabezados, listas para requisitos).
+
+          Contenido jurídico:
+          Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
+          Cuando des información legal, mencionás la fuente: artículo, ley, fallo o doctrina.
+          Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
+
+          Límites claros:
+          No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
+          No inventás jurisprudencia ni datos. Si no sabés, lo decís.
+          No compartís información de un cliente con consultas de otro.
+
+          Consulta del usuario (${profile.displayName}):
+          "${messageContent}"`;
+
+          const response = await genAI.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+          });
+          const text = response.text;
+
+          await addDoc(collection(db, 'messages'), {
+            chatId: 'ai_assistant',
+            authorId: 'ai_bot',
+            authorName: 'LexIA Assistant',
+            content: text,
+            timestamp: new Date().toISOString(),
+            readBy: [profile.uid]
+          });
+        } catch (aiError) {
+          console.error("AI Error:", aiError);
+          await addDoc(collection(db, 'messages'), {
+            chatId: 'ai_assistant',
+            authorId: 'ai_bot',
+            authorName: 'LexIA Assistant',
+            content: "Lo siento, he tenido un problema procesando tu consulta. Por favor, intenta de nuevo en unos momentos.",
+            timestamp: new Date().toISOString(),
+            readBy: [profile.uid]
+          });
+        } finally {
+          setIsTyping(false);
+        }
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'messages');
     }
@@ -121,6 +185,7 @@ export default function Collaboration() {
 
   const getChatTitle = () => {
     if (selectedChatId === 'global') return 'Foro de Despacho';
+    if (selectedChatId === 'ai_assistant') return 'LexIA Assistant';
     const otherUid = selectedChatId.split('_').find(id => id !== profile?.uid);
     const otherUser = users.find(u => u.uid === otherUid);
     return otherUser?.displayName || 'Chat Privado';
@@ -144,7 +209,7 @@ export default function Collaboration() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)] md:h-[calc(100vh-16rem)] min-h-[500px] bg-slate-50/50 p-4 rounded-[2.5rem]">
+    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] min-h-[600px] bg-slate-50/50 p-4 rounded-[2.5rem]">
       {/* Sidebar */}
       <aside className={`lg:w-80 bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white flex flex-col overflow-hidden transition-all duration-300 ${selectedChatId !== null && selectedChatId !== '' ? 'hidden lg:flex' : 'flex'}`}>
         <div className="p-6 border-b border-slate-100/50">
@@ -191,6 +256,25 @@ export default function Collaboration() {
                 {unreadCounts['global']}
               </div>
             )}
+          </button>
+
+          <button
+            onClick={() => setSelectedChatId('ai_assistant')}
+            className={`w-full flex items-center justify-between px-4 py-4 rounded-[1.5rem] transition-all duration-300 group ${
+              selectedChatId === 'ai_assistant' 
+                ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200' 
+                : 'text-slate-600 hover:bg-white hover:shadow-lg hover:shadow-slate-100'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-2xl transition-colors ${selectedChatId === 'ai_assistant' ? 'bg-white/20' : 'bg-emerald-50 text-emerald-600'}`}>
+                <Smile className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-sm tracking-tight">LexIA Assistant</p>
+                <p className={`text-[10px] font-medium ${selectedChatId === 'ai_assistant' ? 'text-emerald-100' : 'text-slate-400'}`}>Inteligencia Artificial</p>
+              </div>
+            </div>
           </button>
 
           <div className="pt-6 pb-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
@@ -272,7 +356,7 @@ export default function Collaboration() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 bg-slate-50/30 scroll-smooth">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 bg-slate-50/30 scroll-smooth">
           {messages.length > 0 ? (
             messages.map((m, index) => {
               const isMe = m.authorId === profile?.uid;
@@ -287,7 +371,7 @@ export default function Collaboration() {
                       </span>
                     </div>
                   )}
-                  <div className={`flex gap-4 md:gap-6 ${isMe ? 'flex-row-reverse' : ''} group`}>
+                    <div className={`flex gap-3 md:gap-4 ${isMe ? 'flex-row-reverse' : ''} group`}>
                     {!isMe && (
                       <div className="h-10 w-10 md:h-12 md:w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
                         <UserIcon className="h-5 w-5 md:h-6 md:w-6 text-slate-400" />
@@ -297,12 +381,18 @@ export default function Collaboration() {
                       {!isMe && selectedChatId === 'global' && (
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">{m.authorName}</span>
                       )}
-                      <div className={`p-4 md:p-5 rounded-[1.5rem] text-sm md:text-base leading-relaxed shadow-sm transition-all duration-300 ${
+                      <div className={`p-3 md:p-4 rounded-[1.5rem] text-sm md:text-base leading-relaxed shadow-sm transition-all duration-300 ${
                         isMe 
                           ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-100 hover:shadow-indigo-200' 
                           : 'bg-white text-slate-700 rounded-tl-none border border-slate-100 hover:shadow-md'
                       }`}>
-                        {m.content}
+                        {m.authorId === 'ai_bot' ? (
+                          <div className="markdown-content prose prose-slate max-w-none prose-sm md:prose-base">
+                            <ReactMarkdown>{m.content}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          m.content
+                        )}
                       </div>
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 px-2">
                         {format(new Date(m.timestamp), 'HH:mm')} hs
@@ -323,10 +413,27 @@ export default function Collaboration() {
               </div>
             </div>
           )}
+          
+          {isTyping && (
+            <div className="flex gap-4 md:gap-6 group">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <Smile className="h-5 w-5 md:h-6 md:w-6 text-emerald-500" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">LexIA Assistant</span>
+                <div className="bg-white p-4 rounded-[1.5rem] rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-1">
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-6 md:p-8 bg-white border-t border-slate-100/50">
+        <div className="p-4 md:p-6 bg-slate-50/30 border-t border-slate-100/50">
           <form onSubmit={handleSend} className="flex items-end gap-4">
             <div className="flex-1 flex items-center gap-3 bg-slate-100/50 p-3 md:p-4 rounded-[2rem] border border-transparent focus-within:border-indigo-500/20 focus-within:bg-white focus-within:ring-8 focus-within:ring-indigo-500/5 transition-all duration-300">
               <button type="button" className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">

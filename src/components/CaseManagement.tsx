@@ -5,9 +5,10 @@ import { db, storage, handleFirestoreError, OperationType } from '../firebase';
 import { Case, FollowUp, UserProfile, DocumentMetadata } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
-import { Plus, Search, Filter, Edit2, Trash2, X, ChevronRight, Save, Calendar as CalendarIcon, User, FileText, Upload, Download, ExternalLink, Loader2, Clock, Eye } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Search, Filter, Edit2, Trash2, X, ChevronRight, Save, Calendar as CalendarIcon, User, FileText, Upload, Download, ExternalLink, Loader2, Clock, Eye, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 import ConfirmationModal from './ConfirmationModal';
 
 const JURISDICTIONS = [
@@ -47,6 +48,8 @@ export default function CaseManagement() {
   const [caseToDelete, setCaseToDelete] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DocumentMetadata | null>(null);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Case>>({
     caseNumber: '',
@@ -244,6 +247,66 @@ export default function CaseManagement() {
       setIsUploading(false);
       // Reset file input
       e.target.value = '';
+    }
+  };
+
+  const generateAiSummary = async () => {
+    if (!viewingCase) return;
+    setIsGeneratingSummary(true);
+    setAiSummary(null);
+
+    try {
+      const { GoogleGenAI } = await import("@google/genai");
+      const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+
+      const followUpsText = viewingCase.followUps?.map(f => `[${f.date}] ${f.authorName}: ${f.content}`).join('\n') || 'Sin seguimientos.';
+      
+      const prompt = `Identidad y rol:
+      Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
+      Tu tarea es analizar el siguiente expediente legal y proporcionar un resumen ejecutivo estructurado.
+
+      Tono y formato:
+      Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
+      Tus respuestas son justas en extensión.
+      IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave, ### para encabezados, listas para requisitos).
+
+      Contenido jurídico:
+      Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
+      Cuando des información legal, mencionás la fuente: artículo, ley, fallo o doctrina.
+      Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
+
+      Límites claros:
+      No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
+      No inventás jurisprudencia ni datos. Si no sabés, lo decís.
+
+      DATOS DEL EXPEDIENTE:
+      Número: ${viewingCase.caseNumber}
+      Carátula: ${viewingCase.caseTitle}
+      Cliente: ${viewingCase.clientName}
+      Contraparte: ${viewingCase.opposingParty}
+      Tipo: ${viewingCase.processType}
+      Jurisdicción: ${viewingCase.jurisdiction}
+      Observaciones: ${viewingCase.observations || 'N/A'}
+      
+      HISTORIAL DE SEGUIMIENTO:
+      ${followUpsText}
+      
+      Por favor, incluye en el resumen:
+      1. Estado actual del caso.
+      2. Hitos principales alcanzados.
+      3. Próximos pasos sugeridos.
+      4. Riesgos o puntos de atención identificados.`;
+
+      const response = await genAI.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+      setAiSummary(response.text);
+    } catch (err) {
+      console.error('AI Summary Error:', err);
+      setAiSummary('Error al generar el resumen con IA. Por favor, intente más tarde.');
+    } finally {
+      setIsGeneratingSummary(false);
     }
   };
 
@@ -563,6 +626,14 @@ export default function CaseManagement() {
                 </div>
                 <div className="flex items-center gap-2 md:gap-4">
                   <button 
+                    onClick={generateAiSummary}
+                    disabled={isGeneratingSummary}
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 md:px-4 md:py-2 rounded-xl transition-all text-xs md:text-sm shadow-lg shadow-emerald-900/20"
+                  >
+                    {isGeneratingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    <span className="hidden sm:inline">Resumen IA</span>
+                  </button>
+                  <button 
                     onClick={() => {
                       setSelectedCase(viewingCase);
                       setFormData(viewingCase);
@@ -648,6 +719,30 @@ export default function CaseManagement() {
                     <h4 className="font-bold text-slate-900 border-b border-slate-200 pb-2">Observaciones</h4>
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">{viewingCase.observations || 'Sin observaciones.'}</p>
                   </section>
+
+                  {aiSummary && (
+                    <motion.section 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 space-y-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-emerald-700">
+                          <Sparkles className="h-5 w-5" />
+                          <h4 className="font-bold">Resumen Inteligente (LexIA)</h4>
+                        </div>
+                        <button onClick={() => setAiSummary(null)} className="text-emerald-400 hover:text-emerald-600">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="text-sm text-slate-700 leading-relaxed markdown-content prose prose-sm prose-emerald max-w-none">
+                        <ReactMarkdown>{aiSummary}</ReactMarkdown>
+                      </div>
+                      <p className="text-[10px] text-emerald-600 font-medium italic">
+                        * Este resumen fue generado automáticamente por IA y debe ser verificado por un profesional.
+                      </p>
+                    </motion.section>
+                  )}
                 </div>
 
                 {/* Right Column: Seguimiento & Documentos */}

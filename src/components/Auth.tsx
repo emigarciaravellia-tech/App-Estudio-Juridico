@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Scale, ShieldCheck, Globe, Zap, AlertCircle, User as UserIcon, Lock, LogIn } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export default function Auth() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Login fields
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -91,9 +93,11 @@ export default function Auth() {
 
           <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 space-y-6">
             {error && (
-              <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-sm font-medium flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                {error}
+              <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-sm font-medium flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                  {error}
+                </div>
               </div>
             )}
             

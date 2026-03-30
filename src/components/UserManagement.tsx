@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile, UserRole, Credential } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { Shield, User as UserIcon, CheckCircle, XCircle, Plus, X, Trash2, AlertTriangle, Key, Users, Pencil } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import ConfirmationModal from './ConfirmationModal';
 
 export default function UserManagement() {
@@ -34,44 +34,6 @@ export default function UserManagement() {
   useEffect(() => {
     if (!isAdmin || !currentUser) return;
 
-    // Ensure admin profile exists in Firestore (for fallback login)
-    const ensureAdminProfile = async () => {
-      try {
-        const adminDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (!adminDoc.exists()) {
-          await setDoc(doc(db, 'users', currentUser.uid), {
-            email: currentUser.email,
-            displayName: currentUser.displayName || 'Administrador',
-            role: 'admin',
-            createdAt: new Date().toISOString()
-          });
-          console.log("Admin profile created in Firestore");
-        }
-      } catch (err) {
-        console.error("Error ensuring admin profile:", err);
-      }
-    };
-
-    const ensureAdminCreds = async () => {
-      try {
-        const q = query(collection(db, 'credentials'), where('userId', '==', currentUser.uid));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          await addDoc(collection(db, 'credentials'), {
-            username: 'admin',
-            password: 'admin123',
-            userId: currentUser.uid
-          });
-          console.log("Admin credentials created in Firestore");
-        }
-      } catch (err) {
-        console.error("Error ensuring admin credentials:", err);
-      }
-    };
-
-    ensureAdminProfile();
-    ensureAdminCreds();
-
     // Fetch Team Members (excluding clients)
     const qUsers = query(collection(db, 'users'), where('role', '!=', 'client'));
     const unsubscribeUsers = onSnapshot(qUsers, (snapshot) => {
@@ -92,7 +54,7 @@ export default function UserManagement() {
       unsubscribeUsers();
       unsubscribeCreds();
     };
-  }, [isAdmin]);
+  }, [isAdmin, currentUser]);
 
   const handleRoleChange = async (uid: string, newRole: UserRole) => {
     const path = `users/${uid}`;
