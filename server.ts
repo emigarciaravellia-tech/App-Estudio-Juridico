@@ -7,6 +7,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+console.log("[Server] Starting LexManage backend...");
+console.log("[Server] Environment:", process.env.NODE_ENV || "development");
+console.log("[Server] GEMINI_API_KEY present:", !!process.env.GEMINI_API_KEY);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -25,11 +29,15 @@ async function startServer() {
     const { message, userName } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
+    console.log(`[AI Chat] Request from user: ${userName}`);
+
     if (!apiKey) {
-      return res.status(500).json({ error: "GEMINI_API_KEY not configured on server" });
+      console.error("[AI Chat] Error: GEMINI_API_KEY is not defined in environment variables.");
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured on server. Please check your Firebase/Cloud Run environment variables." });
     }
 
     try {
+      console.log("[AI Chat] Initializing GoogleGenAI...");
       const genAI = new GoogleGenAI({ apiKey });
       const prompt = `Identidad y rol:
       Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
@@ -54,15 +62,18 @@ async function startServer() {
       Consulta del usuario (${userName}):
       "${message}"`;
 
+      console.log("[AI Chat] Sending request to Gemini...");
       const response = await genAI.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
       });
 
+      console.log("[AI Chat] Response received successfully.");
       res.json({ text: response.text });
     } catch (error) {
-      console.error("AI Server Error:", error);
-      res.status(500).json({ error: "Failed to generate AI response" });
+      console.error("[AI Chat] AI Server Error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: `Failed to generate AI response: ${errorMessage}` });
     }
   });
 
