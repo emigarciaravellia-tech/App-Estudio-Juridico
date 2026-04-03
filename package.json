@@ -5,16 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "start": "node --loader tsx server.ts",
+    "start": "npx tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.57",
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "ai": "^6.0.145",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",

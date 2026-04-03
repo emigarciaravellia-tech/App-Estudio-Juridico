@@ -18,6 +18,7 @@ export default function Collaboration() {
   const [searchTerm, setSearchTerm] = useState('');
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [isTyping, setIsTyping] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -26,7 +27,7 @@ export default function Collaboration() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages, isTyping, streamingContent]);
 
   // Fetch all users for private chats
   useEffect(() => {
@@ -118,31 +119,52 @@ export default function Collaboration() {
       // Handle AI Assistant response
       if (currentChatId === 'ai_assistant') {
         setIsTyping(true);
+        setStreamingContent('');
         try {
+          // Prepare message history for the AI
+          const chatHistory = messages.slice(-10).map(m => ({
+            role: m.authorId === 'ai_bot' ? 'assistant' : 'user',
+            content: m.content
+          }));
+          
+          // Add current message to history
+          chatHistory.push({ role: 'user', content: messageContent });
+
           const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              message: messageContent,
+              messages: chatHistory,
               userName: profile.displayName,
             }),
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Error al obtener respuesta de la IA');
+            throw new Error('Error al obtener respuesta de la IA');
           }
 
-          const data = await response.json();
-          const text = data.text;
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('No se pudo obtener el lector de la respuesta');
+
+          const decoder = new TextDecoder();
+          let fullText = '';
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            fullText += chunk;
+            setStreamingContent(prev => prev + chunk);
+          }
 
           await addDoc(collection(db, 'messages'), {
             chatId: 'ai_assistant',
             authorId: 'ai_bot',
             authorName: 'LexIA Assistant',
-            content: text,
+            content: fullText,
             timestamp: new Date().toISOString(),
             readBy: [profile.uid]
           });
@@ -158,6 +180,7 @@ export default function Collaboration() {
           });
         } finally {
           setIsTyping(false);
+          setStreamingContent('');
         }
       }
     } catch (error) {
@@ -406,12 +429,20 @@ export default function Collaboration() {
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Smile className="h-5 w-5 md:h-6 md:w-6 text-emerald-500" />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[65%]">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">LexIA Assistant</span>
-                <div className="bg-white p-4 rounded-[1.5rem] rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-1">
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                <div className="bg-white p-4 rounded-[1.5rem] rounded-tl-none border border-slate-100 shadow-sm">
+                  {streamingContent ? (
+                    <div className="markdown-content prose prose-slate max-w-none prose-sm md:prose-base">
+                      <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

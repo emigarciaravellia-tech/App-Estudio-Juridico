@@ -2,13 +2,26 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { GoogleGenAI } from "@google/genai";
+import { google } from "@ai-sdk/google";
+import { streamText } from "ai";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
 
+process.on('uncaughtException', (err) => {
+  console.error('[Fatal] Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Fatal] Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 console.log("[Server] Starting LexManage backend...");
 console.log("[Server] Environment:", process.env.NODE_ENV || "development");
+console.log("[Server] PORT:", process.env.PORT || 3000);
 console.log("[Server] GEMINI_API_KEY present:", !!process.env.GEMINI_API_KEY);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,20 +39,20 @@ async function startServer() {
   });
 
   app.post("/api/ai/chat", async (req, res) => {
-    const { message, userName } = req.body;
+    const { messages, userName } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
-    console.log(`[AI Chat] Request from user: ${userName}`);
+    console.log(`[AI Chat] Request from user: ${userName || 'Unknown'}`);
 
     if (!apiKey) {
-      console.error("[AI Chat] Error: GEMINI_API_KEY is not defined in environment variables.");
-      return res.status(500).json({ error: "GEMINI_API_KEY not configured on server. Please check your Firebase/Cloud Run environment variables." });
+      console.error("[AI Chat] Error: GEMINI_API_KEY is not defined.");
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured on server." });
     }
 
     try {
-      console.log("[AI Chat] Initializing GoogleGenAI...");
-      const genAI = new GoogleGenAI({ apiKey });
-      const prompt = `Identidad y rol:
+      console.log("[AI Chat] Initializing Gemini Stream...");
+      
+      const systemInstruction = `Identidad y rol:
       Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
       Respondés solo consultas relacionadas al trabajo del estudio: derecho, cobranzas, expedientes, clientes y procedimientos.
       Si te preguntan algo fuera de ese ámbito, lo declinás amablemente y reencauzás la conversación.
@@ -59,17 +72,25 @@ async function startServer() {
       No inventás jurisprudencia ni datos. Si no sabés, lo decís.
       No compartís información de un cliente con consultas de otro.
 
-      Consulta del usuario (${userName}):
-      "${message}"`;
+      Usuario: ${userName || 'Colega'}`;
 
-      console.log("[AI Chat] Sending request to Gemini...");
-      const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+      const result = await streamText({
+        model: google('gemini-1.5-flash'),
+        system: systemInstruction,
+        messages: messages || [],
       });
 
-      console.log("[AI Chat] Response received successfully.");
-      res.json({ text: response.text });
+      console.log("[AI Chat] Streaming response started.");
+      
+      // Set appropriate headers for streaming
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Transfer-Encoding', 'chunked');
+
+      for await (const textPart of result.textStream) {
+        res.write(textPart);
+      }
+      res.end();
+      
     } catch (error) {
       console.error("[AI Chat] AI Server Error:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -86,9 +107,21 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+    console.log("[Server] Serving static files from:", distPath);
+    
+    // Check if dist exists
+    if (!fs.existsSync(distPath)) {
+      console.warn("[Server] Warning: dist folder not found. Static files might not be served correctly.");
+    }
+
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("Application build not found. Please run 'npm run build' first.");
+      }
     });
   }
 
