@@ -18,7 +18,6 @@ export default function Collaboration() {
   const [searchTerm, setSearchTerm] = useState('');
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [isTyping, setIsTyping] = useState(false);
-  const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -27,7 +26,7 @@ export default function Collaboration() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, streamingContent]);
+  }, [messages, isTyping]);
 
   // Fetch all users for private chats
   useEffect(() => {
@@ -119,59 +118,44 @@ export default function Collaboration() {
       // Handle AI Assistant response
       if (currentChatId === 'ai_assistant') {
         setIsTyping(true);
-        setStreamingContent('');
         try {
-          // Prepare message history for the AI
-          const chatHistory = messages.slice(-10).map(m => ({
-            role: m.authorId === 'ai_bot' ? 'assistant' : 'user',
-            content: m.content
-          }));
+          const { GoogleGenAI } = await import("@google/genai");
+          const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
           
-          // Add current message to history
-          chatHistory.push({ role: 'user', content: messageContent });
+          const prompt = `Identidad y rol:
+          Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
+          Respondés solo consultas relacionadas al trabajo del estudio: derecho, cobranzas, expedientes, clientes y procedimientos.
+          Si te preguntan algo fuera de ese ámbito, lo declinás amablemente y reencauzás la conversación.
 
-          console.log("[AI Chat] Sending request to server...", { messagesCount: chatHistory.length });
-          const response = await fetch('/api/ai/chat', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: chatHistory,
-              userName: profile.displayName,
-            }),
+          Tono y formato:
+          Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
+          Tus respuestas son justas en extensión: ni un párrafo escueto ni una enciclopedia.
+          IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave, ### para encabezados, listas para requisitos).
+
+          Contenido jurídico:
+          Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
+          Cuando des información legal, mencionás la fuente: artículo, ley, fallo o doctrina.
+          Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
+
+          Límites claros:
+          No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
+          No inventás jurisprudencia ni datos. Si no sabés, lo decís.
+          No compartís información de un cliente con consultas de otro.
+
+          Consulta del usuario (${profile.displayName}):
+          "${messageContent}"`;
+
+          const response = await genAI.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
           });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("[AI Chat] Server responded with error:", response.status, errorText);
-            throw new Error(`Error del servidor (${response.status}): ${errorText}`);
-          }
-
-          console.log("[AI Chat] Connection established, reading stream...");
-          const reader = response.body?.getReader();
-          if (!reader) throw new Error('No se pudo obtener el lector de la respuesta');
-
-          const decoder = new TextDecoder();
-          let fullText = '';
-          
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              console.log("[AI Chat] Stream finished.");
-              break;
-            }
-            
-            const chunk = decoder.decode(value, { stream: true });
-            fullText += chunk;
-            setStreamingContent(prev => prev + chunk);
-          }
+          const text = response.text;
 
           await addDoc(collection(db, 'messages'), {
             chatId: 'ai_assistant',
             authorId: 'ai_bot',
             authorName: 'LexIA Assistant',
-            content: fullText,
+            content: text,
             timestamp: new Date().toISOString(),
             readBy: [profile.uid]
           });
@@ -187,7 +171,6 @@ export default function Collaboration() {
           });
         } finally {
           setIsTyping(false);
-          setStreamingContent('');
         }
       }
     } catch (error) {
@@ -436,20 +419,12 @@ export default function Collaboration() {
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Smile className="h-5 w-5 md:h-6 md:w-6 text-emerald-500" />
               </div>
-              <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[65%]">
+              <div className="flex flex-col gap-2">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">LexIA Assistant</span>
-                <div className="bg-white p-4 rounded-[1.5rem] rounded-tl-none border border-slate-100 shadow-sm">
-                  {streamingContent ? (
-                    <div className="markdown-content prose prose-slate max-w-none prose-sm md:prose-base">
-                      <ReactMarkdown>{streamingContent}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
-                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
-                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
-                    </div>
-                  )}
+                <div className="bg-white p-4 rounded-[1.5rem] rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-1">
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
                 </div>
               </div>
             </div>
