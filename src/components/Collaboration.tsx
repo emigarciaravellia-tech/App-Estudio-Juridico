@@ -120,7 +120,7 @@ export default function Collaboration() {
         setIsTyping(true);
         try {
           const { GoogleGenAI } = await import("@google/genai");
-          const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+          const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
           
           const prompt = `Identidad y rol:
           Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.

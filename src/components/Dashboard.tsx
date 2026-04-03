@@ -107,7 +107,7 @@ export default function Dashboard() {
 
     try {
       const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
 
       const tasksText = pendingTasks.map(t => `- ${t.title} (Vence: ${t.dueDate})`).join('\n');
       const eventsText = upcomingEvents.map(e => `- ${e.title} (Inicio: ${e.startTime})`).join('\n');

@@ -257,7 +257,7 @@ export default function CaseManagement() {
 
     try {
       const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
 
       const followUpsText = viewingCase.followUps?.map(f => `[${f.date}] ${f.authorName}: ${f.content}`).join('\n') || 'Sin seguimientos.';
       
