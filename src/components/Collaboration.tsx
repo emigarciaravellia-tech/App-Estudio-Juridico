@@ -209,7 +209,7 @@ export default function Collaboration() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] min-h-[600px] bg-slate-50/50 p-4 rounded-[2.5rem]">
+    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] min-h-[600px] bg-slate-50/50 p-4 rounded-[2.5rem]">
       {/* Sidebar */}
       <aside className={`lg:w-80 bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white flex flex-col overflow-hidden transition-all duration-300 ${selectedChatId !== null && selectedChatId !== '' ? 'hidden lg:flex' : 'flex'}`}>
         <div className="p-6 border-b border-slate-100/50">
@@ -321,42 +321,42 @@ export default function Collaboration() {
 
       {/* Chat Window */}
       <div className={`flex-1 bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-white flex flex-col overflow-hidden transition-all duration-300 ${selectedChatId === null || selectedChatId === '' ? 'hidden lg:flex' : 'flex'}`}>
-        <header className="px-6 md:px-10 py-6 md:py-8 border-b border-slate-100/50 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-10">
-          <div className="flex items-center gap-5">
+        <header className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100/50 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-10">
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => setSelectedChatId('')}
-              className="lg:hidden p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all"
+              className="lg:hidden p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
-            <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl md:rounded-[1.25rem] bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xl md:text-2xl shadow-inner">
+            <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-lg md:text-xl shadow-inner">
               {getChatTitle()[0]}
             </div>
             <div>
-              <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight truncate max-w-[150px] md:max-w-none">{getChatTitle()}</h3>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Activo ahora</span>
+              <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight truncate max-w-[150px] md:max-w-none">{getChatTitle()}</h3>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Activo ahora</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {profile?.role === 'admin' && (
               <button 
                 onClick={handleClearChat}
-                className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all group"
+                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all group"
                 title="Limpiar chat"
               >
-                <Trash2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
               </button>
             )}
-            <button className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all">
-              <MoreVertical className="h-5 w-5" />
+            <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+              <MoreVertical className="h-4 w-4" />
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 bg-slate-50/30 scroll-smooth">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/30 scroll-smooth">
           {messages.length > 0 ? (
             messages.map((m, index) => {
               const isMe = m.authorId === profile?.uid;
@@ -365,23 +365,23 @@ export default function Collaboration() {
               return (
                 <React.Fragment key={m.id}>
                   {showDate && (
-                    <div className="flex justify-center py-4">
-                      <span className="px-6 py-2 bg-white/80 backdrop-blur-sm border border-slate-100 rounded-2xl text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] shadow-sm">
+                    <div className="flex justify-center py-2">
+                      <span className="px-4 py-1 bg-white/80 backdrop-blur-sm border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] shadow-sm">
                         {format(new Date(m.timestamp), "EEEE d 'de' MMMM", { locale: es })}
                       </span>
                     </div>
                   )}
-                    <div className={`flex gap-3 md:gap-4 ${isMe ? 'flex-row-reverse' : ''} group`}>
+                    <div className={`flex gap-2 md:gap-3 ${isMe ? 'flex-row-reverse' : ''} group`}>
                     {!isMe && (
-                      <div className="h-10 w-10 md:h-12 md:w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
-                        <UserIcon className="h-5 w-5 md:h-6 md:w-6 text-slate-400" />
+                      <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
+                        <UserIcon className="h-4 w-4 md:h-5 md:w-5 text-slate-400" />
                       </div>
                     )}
-                    <div className={`max-w-[85%] md:max-w-[65%] ${isMe ? 'items-end' : ''} flex flex-col gap-2`}>
+                    <div className={`max-w-[85%] md:max-w-[75%] ${isMe ? 'items-end' : ''} flex flex-col gap-1`}>
                       {!isMe && selectedChatId === 'global' && (
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">{m.authorName}</span>
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">{m.authorName}</span>
                       )}
-                      <div className={`p-3 md:p-4 rounded-[1.5rem] text-sm md:text-base leading-relaxed shadow-sm transition-all duration-300 ${
+                      <div className={`p-3 md:p-3.5 rounded-[1.25rem] text-sm md:text-base leading-relaxed shadow-sm transition-all duration-300 ${
                         isMe 
                           ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-100 hover:shadow-indigo-200' 
                           : 'bg-white text-slate-700 rounded-tl-none border border-slate-100 hover:shadow-md'
@@ -394,7 +394,7 @@ export default function Collaboration() {
                           m.content
                         )}
                       </div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 px-2">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1">
                         {format(new Date(m.timestamp), 'HH:mm')} hs
                       </span>
                     </div>
@@ -403,11 +403,11 @@ export default function Collaboration() {
               );
             })
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-6">
-              <div className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-100/50">
-                <MessageSquare className="h-16 w-16 text-indigo-100" />
+            <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
+              <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50">
+                <MessageSquare className="h-12 w-12 text-indigo-100" />
               </div>
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-1">
                 <p className="text-lg font-black text-slate-900 tracking-tight">Comienza la conversación</p>
                 <p className="text-sm font-medium text-slate-400">Envía un mensaje para iniciar el chat.</p>
               </div>
@@ -415,16 +415,16 @@ export default function Collaboration() {
           )}
           
           {isTyping && (
-            <div className="flex gap-4 md:gap-6 group">
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <Smile className="h-5 w-5 md:h-6 md:w-6 text-emerald-500" />
+            <div className="flex gap-3 md:gap-4 group">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <Smile className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
               </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">LexIA Assistant</span>
-                <div className="bg-white p-4 rounded-[1.5rem] rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-1">
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1.5 w-1.5 bg-slate-400 rounded-full" />
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">LexIA Assistant</span>
+                <div className="bg-white p-3 rounded-[1.25rem] rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-1">
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1 w-1 bg-slate-400 rounded-full" />
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1 w-1 bg-slate-400 rounded-full" />
+                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1 w-1 bg-slate-400 rounded-full" />
                 </div>
               </div>
             </div>
@@ -433,11 +433,11 @@ export default function Collaboration() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 md:p-6 bg-slate-50/30 border-t border-slate-100/50">
-          <form onSubmit={handleSend} className="flex items-end gap-4">
-            <div className="flex-1 flex items-center gap-3 bg-slate-100/50 p-3 md:p-4 rounded-[2rem] border border-transparent focus-within:border-indigo-500/20 focus-within:bg-white focus-within:ring-8 focus-within:ring-indigo-500/5 transition-all duration-300">
-              <button type="button" className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
-                <Smile className="h-6 w-6" />
+        <div className="p-4 md:p-5 bg-slate-50/30 border-t border-slate-100/50">
+          <form onSubmit={handleSend} className="flex items-end gap-3">
+            <div className="flex-1 flex items-center gap-2 bg-slate-100/50 p-2.5 md:p-3 rounded-[1.5rem] border border-transparent focus-within:border-indigo-500/20 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all duration-300">
+              <button type="button" className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                <Smile className="h-5 w-5" />
               </button>
               <input
                 type="text"
@@ -446,16 +446,16 @@ export default function Collaboration() {
                 value={newMessage}
                 onChange={e => setNewMessage(e.target.value)}
               />
-              <button type="button" className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
-                <Paperclip className="h-6 w-6" />
+              <button type="button" className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                <Paperclip className="h-5 w-5" />
               </button>
             </div>
             <button
               type="submit"
               disabled={!newMessage.trim()}
-              className="p-4 md:p-5 bg-indigo-600 text-white rounded-[1.5rem] hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95"
+              className="p-3.5 md:p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-200 hover:scale-105 active:scale-95"
             >
-              <Send className="h-6 w-6" />
+              <Send className="h-5 w-5" />
             </button>
           </form>
         </div>
