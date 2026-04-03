@@ -34,6 +34,15 @@ export default function Dashboard() {
   const [upcomingInvoices, setUpcomingInvoices] = useState<Invoice[]>([]);
   const [aiInsights, setAiInsights] = useState<string | null>(null);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [aiStatus, setAiStatus] = useState<{ configured: boolean; keyPrefix: string } | null>(null);
+
+  useEffect(() => {
+    // Check AI status on mount
+    fetch('/api/ai/status')
+      .then(res => res.json())
+      .then(data => setAiStatus(data))
+      .catch(err => console.error('Error fetching AI status:', err));
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -106,30 +115,12 @@ export default function Dashboard() {
     setAiInsights(null);
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-
       const tasksText = pendingTasks.map(t => `- ${t.title} (Vence: ${t.dueDate})`).join('\n');
       const eventsText = upcomingEvents.map(e => `- ${e.title} (Inicio: ${e.startTime})`).join('\n');
       const casesText = recentCases.slice(0, 3).map(c => `- ${c.caseTitle || c.caseNumber} (Estado: ${c.status})`).join('\n');
 
-      const prompt = `Identidad y rol:
-      Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
-      Tu tarea es analizar la carga de trabajo actual de ${profile.displayName} y proporcionar 3-4 "Insights" o consejos estratégicos para hoy.
-
-      Tono y formato:
-      Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
-      Tus respuestas son muy concisas (máximo 300 caracteres en total).
-      IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave).
-
-      Contenido jurídico:
-      Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
-      Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
-
-      Límites claros:
-      No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
-      No inventás jurisprudencia ni datos. Si no sabés, lo decís.
-
+      const prompt = `Analizá mi carga de trabajo y dame 3-4 consejos estratégicos breves para hoy.
+      
       TAREAS PENDIENTES:
       ${tasksText || 'Ninguna'}
       
@@ -139,11 +130,32 @@ export default function Dashboard() {
       EXPEDIENTES RECIENTES:
       ${casesText || 'Ninguno'}`;
 
-      const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          userName: profile.displayName,
+        }),
       });
-      setAiInsights(response.text);
+
+      if (!response.ok) throw new Error('Error al generar insights');
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No se pudo obtener el lector');
+
+      const decoder = new TextDecoder();
+      let fullText = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+        setAiInsights(prev => (prev || '') + chunk);
+      }
     } catch (err) {
       console.error('AI Insights Error:', err);
       setAiInsights('No he podido generar insights en este momento. ¡Que tengas un excelente día de trabajo!');
@@ -169,6 +181,14 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {aiStatus && (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+              aiStatus.configured ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+            }`}>
+              <div className={`h-1.5 w-1.5 rounded-full ${aiStatus.configured ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+              LexIA: {aiStatus.configured ? 'Listo' : 'Sin Configurar'}
+            </div>
+          )}
           <button 
             onClick={generateAiInsights}
             disabled={isGeneratingInsights}

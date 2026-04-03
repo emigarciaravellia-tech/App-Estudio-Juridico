@@ -2,7 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText } from "ai";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -38,20 +38,35 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  app.get("/api/ai/status", (req, res) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    res.json({
+      configured: !!apiKey,
+      keyPrefix: apiKey ? `${apiKey.substring(0, 4)}...` : 'none',
+      nodeEnv: process.env.NODE_ENV,
+      provider: 'google-ai-sdk'
+    });
+  });
+
   app.post("/api/ai/chat", async (req, res) => {
     const { messages, userName } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
     console.log(`[AI Chat] Request from user: ${userName || 'Unknown'}`);
+    console.log(`[AI Chat] Messages count: ${messages?.length || 0}`);
 
     if (!apiKey) {
-      console.error("[AI Chat] Error: GEMINI_API_KEY is not defined.");
-      return res.status(500).json({ error: "GEMINI_API_KEY not configured on server." });
+      console.error("[AI Chat] Error: GEMINI_API_KEY is missing!");
+      return res.status(500).json({ error: "GEMINI_API_KEY no configurada en el servidor." });
     }
 
     try {
-      console.log("[AI Chat] Initializing Gemini Stream...");
+      console.log("[AI Chat] Initializing Gemini with explicit API Key...");
       
+      const google = createGoogleGenerativeAI({
+        apiKey: apiKey,
+      });
+
       const systemInstruction = `Identidad y rol:
       Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
       Respondés solo consultas relacionadas al trabajo del estudio: derecho, cobranzas, expedientes, clientes y procedimientos.
@@ -80,7 +95,7 @@ async function startServer() {
         messages: messages || [],
       });
 
-      console.log("[AI Chat] Streaming response started.");
+      console.log("[AI Chat] Stream started successfully.");
       
       // Set appropriate headers for streaming
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -90,9 +105,10 @@ async function startServer() {
         res.write(textPart);
       }
       res.end();
+      console.log("[AI Chat] Stream finished.");
       
     } catch (error) {
-      console.error("[AI Chat] AI Server Error:", error);
+      console.error("[AI Chat] CRITICAL ERROR:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({ error: `Failed to generate AI response: ${errorMessage}` });
     }

@@ -130,6 +130,7 @@ export default function Collaboration() {
           // Add current message to history
           chatHistory.push({ role: 'user', content: messageContent });
 
+          console.log("[AI Chat] Sending request to server...", { messagesCount: chatHistory.length });
           const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: {
@@ -142,9 +143,12 @@ export default function Collaboration() {
           });
 
           if (!response.ok) {
-            throw new Error('Error al obtener respuesta de la IA');
+            const errorText = await response.text();
+            console.error("[AI Chat] Server responded with error:", response.status, errorText);
+            throw new Error(`Error del servidor (${response.status}): ${errorText}`);
           }
 
+          console.log("[AI Chat] Connection established, reading stream...");
           const reader = response.body?.getReader();
           if (!reader) throw new Error('No se pudo obtener el lector de la respuesta');
 
@@ -153,7 +157,10 @@ export default function Collaboration() {
           
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              console.log("[AI Chat] Stream finished.");
+              break;
+            }
             
             const chunk = decoder.decode(value, { stream: true });
             fullText += chunk;
