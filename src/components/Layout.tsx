@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Shield,
-  Receipt
+  Receipt,
+  BrainCircuit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -58,6 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Calendario', path: '/calendar', icon: CalendarIcon, roles: ['admin', 'lawyer', 'assistant'] },
     { name: 'Tareas', path: '/tasks', icon: CheckSquare, roles: ['admin', 'lawyer', 'assistant'] },
     { name: 'Facturación', path: '/billing', icon: Receipt, roles: ['admin', 'lawyer'] },
+    { name: 'Resumen SAC', path: '/sac-summary', icon: BrainCircuit, roles: ['admin', 'lawyer', 'assistant'] },
     { name: 'Mensajes', path: '/collaboration', icon: MessageSquare, roles: ['admin', 'lawyer', 'assistant'], badge: unreadCount > 0 },
     { name: 'Usuarios', path: '/users', icon: Shield, roles: ['admin'] },
   ];

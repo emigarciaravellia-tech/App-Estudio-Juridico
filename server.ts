@@ -6,6 +6,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText } from "ai";
 import dotenv from "dotenv";
 import fs from "fs";
+import { AIService } from "./src/services/aiService";
 
 dotenv.config();
 
@@ -50,54 +51,14 @@ async function startServer() {
 
   app.post("/api/ai/chat", async (req, res) => {
     const { messages, userName } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    console.log(`[AI Chat] Request from user: ${userName || 'Unknown'}`);
-    console.log(`[AI Chat] Messages count: ${messages?.length || 0}`);
-
-    if (!apiKey) {
-      console.error("[AI Chat] Error: GEMINI_API_KEY is missing!");
-      return res.status(500).json({ error: "GEMINI_API_KEY no configurada en el servidor." });
-    }
-
     try {
-      console.log("[AI Chat] Initializing Gemini with explicit API Key...");
-      
-      const google = createGoogleGenerativeAI({
-        apiKey: apiKey,
-      });
-
-      const systemInstruction = `Identidad y rol:
-      Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
-      Respondés solo consultas relacionadas al trabajo del estudio: derecho, cobranzas, expedientes, clientes y procedimientos.
-      Si te preguntan algo fuera de ese ámbito, lo declinás amablemente y reencauzás la conversación.
-
-      Tono y formato:
-      Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
-      Tus respuestas son justas en extensión: ni un párrafo escueto ni una enciclopedia.
-      IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave, ### para encabezados, listas para requisitos).
-
-      Contenido jurídico:
-      Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
-      Cuando des información legal, mencionás la fuente: artículo, ley, fallo o doctrina.
-      Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
-
-      Límites claros:
-      No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
-      No inventás jurisprudencia ni datos. Si no sabés, lo decís.
-      No compartís información de un cliente con consultas de otro.
-
-      Usuario: ${userName || 'Colega'}`;
-
+      const model = AIService.getModel();
       const result = await streamText({
-        model: google('gemini-1.5-flash'),
-        system: systemInstruction,
+        model,
+        system: AIService.getJurisdictionalInstructions() + `\nUsuario: ${userName || 'Colega'}`,
         messages: messages || [],
       });
 
-      console.log("[AI Chat] Stream started successfully.");
-      
-      // Set appropriate headers for streaming
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Transfer-Encoding', 'chunked');
 
@@ -105,12 +66,89 @@ async function startServer() {
         res.write(textPart);
       }
       res.end();
-      console.log("[AI Chat] Stream finished.");
-      
     } catch (error) {
-      console.error("[AI Chat] CRITICAL ERROR:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ error: `Failed to generate AI response: ${errorMessage}` });
+      console.error("[AI Chat] Error:", error);
+      res.status(500).json({ error: "Failed to generate AI response" });
+    }
+  });
+
+  app.post("/api/sac/sync", async (req, res) => {
+    const { username, password } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: "GEMINI_API_KEY no configurada." });
+    }
+
+    try {
+      console.log(`[SAC Sync] Starting sync for user: ${username}`);
+      
+      // SIMULACIÓN DE SCRAPING (Debido a restricciones de entorno para Puppeteer)
+      // En un entorno real, aquí usaríamos Puppeteer para entrar al SAC.
+      // Para esta demo, simulamos la obtención de texto crudo del SAC.
+      
+      const mockRawData = `
+        EXPEDIENTE: 1234567/2024 - GARCIA VS. MUNICIPALIDAD DE CORDOBA
+        FECHA: 05/04/2026
+        ACTUACIÓN: DECRETO - TRASLADO DE PLANILLA
+        TEXTO: Córdoba, 5 de abril de 2026. Téngase por presentada la planilla de liquidación por la parte actora. De la misma, córrase traslado a la contraria por el término de tres (3) días bajo apercibimiento. Notifíquese. Fdo: Dr. Pérez - Juez.
+        
+        EXPEDIENTE: 9876543/2023 - MARTINEZ S/ SUCESIÓN
+        FECHA: 06/04/2026
+        ACTUACIÓN: AUTO - DECLARATORIA DE HEREDEROS
+        TEXTO: Vistos los autos... Resuelvo: Declarar en cuanto a lugar por derecho que por fallecimiento de Doña María Martínez... le suceden en carácter de universales herederos sus hijos...
+      `;
+
+      const google = createGoogleGenerativeAI({ apiKey });
+      const model = google('gemini-1.5-flash');
+
+      const prompt = `
+        Sos un experto legal en el sistema SAC de Córdoba. 
+        Analizá el siguiente texto extraído del SAC y generá una lista de resúmenes estructurados en formato JSON.
+        Para cada actuación detectada, incluí:
+        - title: Un título breve (ej: "Traslado de Planilla - Garcia vs. Muni")
+        - caseNumber: El número de expediente
+        - content: Un resumen ejecutivo de lo que dice el decreto o auto.
+        - date: La fecha de la actuación (YYYY-MM-DD)
+        - type: 'decreto' o 'expediente' o 'novedad'
+        - importantDeadlines: Un array de objetos { date: string, description: string } si detectás plazos fatales o términos.
+        - rawText: El texto original analizado.
+
+        Texto del SAC:
+        ${mockRawData}
+
+        Respondé ÚNICAMENTE con el array JSON, sin texto adicional ni bloques de código.
+      `;
+
+      const { text } = await streamText({
+        model,
+        prompt,
+      });
+
+      // Since we are not streaming here for simplicity of the result, we wait for the full text
+      // Actually, streamText returns a result that can be awaited for full text
+      let fullText = "";
+      const result = await streamText({ model, prompt });
+      for await (const part of result.textStream) {
+        fullText += part;
+      }
+
+      // Clean the JSON if Gemini added markdown blocks
+      const jsonString = fullText.replace(/```json|```/g, "").trim();
+      const summaries = JSON.parse(jsonString);
+
+      // In a real app, we would save these to Firestore here or return them to the frontend to save.
+      // For now, we return them.
+      
+      res.json({ 
+        status: "success", 
+        message: "Sincronización completada con éxito (Simulada)",
+        summaries 
+      });
+
+    } catch (error) {
+      console.error("[SAC Sync] Error:", error);
+      res.status(500).json({ error: "Error en el procesamiento de la IA para el SAC." });
     }
   });
 

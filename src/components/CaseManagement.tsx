@@ -3,6 +3,8 @@ import { collection, onSnapshot, query, addDoc, updateDoc, doc, deleteDoc, array
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, handleFirestoreError, OperationType } from '../firebase';
 import { Case, FollowUp, UserProfile, DocumentMetadata } from '../types';
+import { CaseRepository } from '../services/caseRepository';
+import { AIService } from '../services/aiService';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 import { Plus, Search, Filter, Edit2, Trash2, X, ChevronRight, Save, Calendar as CalendarIcon, User, FileText, Upload, Download, ExternalLink, Loader2, Clock, Eye, Sparkles } from 'lucide-react';
@@ -70,12 +72,7 @@ export default function CaseManagement() {
   });
 
   useEffect(() => {
-    const q = query(collection(db, 'cases'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCases(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Case)));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'cases');
-    });
+    const unsubscribe = CaseRepository.subscribeToCases(setCases);
 
     const qLawyers = query(collection(db, 'users'));
     const unsubscribeLawyers = onSnapshot(qLawyers, (snapshot) => {
@@ -112,7 +109,6 @@ export default function CaseManagement() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const path = 'cases';
     try {
       const data = {
         ...formData,
@@ -120,17 +116,12 @@ export default function CaseManagement() {
         caseTitle: formData.caseTitle || '',
         clientName: formData.clientName || '',
         status: formData.status || 'activo',
-        updatedAt: new Date().toISOString()
       };
 
       if (selectedCase) {
-        await updateDoc(doc(db, path, selectedCase.id), data);
+        await CaseRepository.update(selectedCase.id, data);
       } else {
-        await addDoc(collection(db, path), {
-          ...data,
-          createdAt: new Date().toISOString(),
-          followUps: []
-        });
+        await CaseRepository.create(data);
       }
       setIsModalOpen(false);
       setSelectedCase(null);
@@ -138,7 +129,6 @@ export default function CaseManagement() {
     } catch (err) {
       console.error('Error saving case:', err);
       setError('Error al guardar el expediente. Verifique sus permisos y campos obligatorios.');
-      handleFirestoreError(err, selectedCase ? OperationType.UPDATE : OperationType.CREATE, selectedCase ? `cases/${selectedCase.id}` : 'cases');
     }
   };
 
@@ -256,52 +246,8 @@ export default function CaseManagement() {
     setAiSummary(null);
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
-
-      const followUpsText = viewingCase.followUps?.map(f => `[${f.date}] ${f.authorName}: ${f.content}`).join('\n') || 'Sin seguimientos.';
-      
-      const prompt = `Identidad y rol:
-      Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
-      Tu tarea es analizar el siguiente expediente legal y proporcionar un resumen ejecutivo estructurado.
-
-      Tono y formato:
-      Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
-      Tus respuestas son justas en extensión.
-      IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave, ### para encabezados, listas para requisitos).
-
-      Contenido jurídico:
-      Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
-      Cuando des información legal, mencionás la fuente: artículo, ley, fallo o doctrina.
-      Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
-
-      Límites claros:
-      No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
-      No inventás jurisprudencia ni datos. Si no sabés, lo decís.
-
-      DATOS DEL EXPEDIENTE:
-      Número: ${viewingCase.caseNumber}
-      Carátula: ${viewingCase.caseTitle}
-      Cliente: ${viewingCase.clientName}
-      Contraparte: ${viewingCase.opposingParty}
-      Tipo: ${viewingCase.processType}
-      Jurisdicción: ${viewingCase.jurisdiction}
-      Observaciones: ${viewingCase.observations || 'N/A'}
-      
-      HISTORIAL DE SEGUIMIENTO:
-      ${followUpsText}
-      
-      Por favor, incluye en el resumen:
-      1. Estado actual del caso.
-      2. Hitos principales alcanzados.
-      3. Próximos pasos sugeridos.
-      4. Riesgos o puntos de atención identificados.`;
-
-      const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-      });
-      setAiSummary(response.text);
+      const summary = await AIService.summarizeCase(viewingCase);
+      setAiSummary(summary);
     } catch (err) {
       console.error('AI Summary Error:', err);
       setAiSummary('Error al generar el resumen con IA. Por favor, intente más tarde.');

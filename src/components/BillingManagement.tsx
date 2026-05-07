@@ -63,12 +63,14 @@ export default function BillingManagement() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isPartialModalOpen, setIsPartialModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isEditPaymentModalOpen, setIsEditPaymentModalOpen] = useState(false);
   const [invoiceForStatusChange, setInvoiceForStatusChange] = useState<Invoice | null>(null);
   const [selectedInvoiceForSummary, setSelectedInvoiceForSummary] = useState<Invoice | null>(null);
+  const [editingPayment, setEditingPayment] = useState<{ invoiceId: string, payment: Invoice['payments'][0] } | null>(null);
   const [partialPaymentData, setPartialPaymentData] = useState({
     amount: 0,
     method: 'transfer' as any,
-    notes: ''
+    reference: ''
   });
 
   const [formData, setFormData] = useState({
@@ -210,7 +212,7 @@ export default function BillingManagement() {
   const handleStatusChange = async (invoice: Invoice, newStatus: Invoice['status']) => {
     if (newStatus === 'partial') {
       setInvoiceForStatusChange(invoice);
-      setPartialPaymentData({ amount: 0, method: 'transfer', notes: '' });
+      setPartialPaymentData({ amount: 0, method: 'transfer', reference: '' });
       setIsPartialModalOpen(true);
       setIsStatusModalOpen(false);
       return;
@@ -235,7 +237,7 @@ export default function BillingManagement() {
       amount: partialPaymentData.amount,
       date: new Date().toISOString(),
       method: partialPaymentData.method,
-      reference: partialPaymentData.notes
+      reference: partialPaymentData.reference
     };
 
     const updatedPayments = [...(invoiceForStatusChange.payments || []), newPayment];
@@ -256,6 +258,85 @@ export default function BillingManagement() {
       setInvoiceForStatusChange(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `invoices/${invoiceForStatusChange.id}`);
+    }
+  };
+
+  const handleEditPayment = (invoice: Invoice, payment: Invoice['payments'][0]) => {
+    setEditingPayment({ invoiceId: invoice.id, payment });
+    setPartialPaymentData({
+      amount: payment.amount,
+      method: payment.method,
+      reference: payment.reference || ''
+    });
+    setIsEditPaymentModalOpen(true);
+  };
+
+  const handleUpdatePayment = async () => {
+    if (!editingPayment || !selectedInvoiceForSummary) return;
+
+    const updatedPayments = selectedInvoiceForSummary.payments.map(p => 
+      p.id === editingPayment.payment.id 
+        ? { ...p, amount: partialPaymentData.amount, method: partialPaymentData.method, reference: partialPaymentData.reference }
+        : p
+    );
+
+    const totalPaid = updatedPayments.reduce((acc, p) => acc + p.amount, 0);
+    let newStatus: Invoice['status'] = 'partial';
+    if (totalPaid >= selectedInvoiceForSummary.amount) {
+      newStatus = 'paid';
+    } else if (totalPaid <= 0) {
+      newStatus = 'pending';
+    }
+
+    try {
+      await updateDoc(doc(db, 'invoices', selectedInvoiceForSummary.id), {
+        payments: updatedPayments,
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Update local state for summary modal
+      setSelectedInvoiceForSummary({
+        ...selectedInvoiceForSummary,
+        payments: updatedPayments,
+        status: newStatus
+      });
+      
+      setIsEditPaymentModalOpen(false);
+      setEditingPayment(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `invoices/${selectedInvoiceForSummary.id}`);
+    }
+  };
+
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!selectedInvoiceForSummary) return;
+
+    const updatedPayments = selectedInvoiceForSummary.payments.filter(p => p.id !== paymentId);
+    const totalPaid = updatedPayments.reduce((acc, p) => acc + p.amount, 0);
+    
+    let newStatus: Invoice['status'] = 'partial';
+    if (totalPaid <= 0) {
+      newStatus = 'pending';
+    } else if (totalPaid >= selectedInvoiceForSummary.amount) {
+      newStatus = 'paid';
+    }
+
+    try {
+      await updateDoc(doc(db, 'invoices', selectedInvoiceForSummary.id), {
+        payments: updatedPayments,
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state for summary modal
+      setSelectedInvoiceForSummary({
+        ...selectedInvoiceForSummary,
+        payments: updatedPayments,
+        status: newStatus
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `invoices/${selectedInvoiceForSummary.id}`);
     }
   };
 
@@ -930,12 +1011,12 @@ export default function BillingManagement() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Notas / Conceptos Cancelados</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Referencia / Concepto</label>
                     <textarea 
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
                       placeholder="Ej: Pago de honorarios primera etapa..."
-                      value={partialPaymentData.notes}
-                      onChange={(e) => setPartialPaymentData({ ...partialPaymentData, notes: e.target.value })}
+                      value={partialPaymentData.reference}
+                      onChange={(e) => setPartialPaymentData({ ...partialPaymentData, reference: e.target.value })}
                     />
                   </div>
                 </div>
@@ -1061,14 +1142,52 @@ export default function BillingManagement() {
                 {selectedInvoiceForSummary.payments && selectedInvoiceForSummary.payments.length > 0 && (
                   <div className="space-y-4">
                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Historial de Pagos</h5>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {selectedInvoiceForSummary.payments.map((payment, idx) => (
-                        <div key={idx} className="flex justify-between items-center py-2 bg-slate-50 px-4 rounded-xl">
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">{payment.reference || 'Pago registrado'}</p>
-                            <p className="text-[10px] text-slate-500">{format(parseISO(payment.date), 'dd/MM/yyyy HH:mm')} - {payment.method}</p>
+                        <div key={idx} className="group flex justify-between items-center py-3 bg-slate-50 px-4 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                              payment.method === 'cash' ? 'bg-emerald-50 text-emerald-600' :
+                              payment.method === 'transfer' ? 'bg-indigo-50 text-indigo-600' :
+                              payment.method === 'card' ? 'bg-amber-50 text-amber-600' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {payment.method === 'cash' ? <Wallet className="h-5 w-5" /> :
+                               payment.method === 'transfer' ? <ArrowRightLeft className="h-5 w-5" /> :
+                               payment.method === 'card' ? <CreditCard className="h-5 w-5" /> :
+                               <DollarSign className="h-5 w-5" />}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">{payment.reference || 'Pago registrado'}</p>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                <Calendar className="h-3 w-3" />
+                                {format(parseISO(payment.date), 'dd/MM/yyyy HH:mm')}
+                                <span className="mx-1">•</span>
+                                <span className="capitalize">{payment.method}</span>
+                              </div>
+                            </div>
                           </div>
-                          <p className="font-bold text-emerald-600">+ ${payment.amount.toLocaleString()}</p>
+                          <div className="flex items-center gap-4">
+                            <p className="font-black text-emerald-600">+ ${payment.amount.toLocaleString()}</p>
+                            {canModify && (
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleEditPayment(selectedInvoiceForSummary, payment); }}
+                                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
+                                  title="Editar Pago"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleDeletePayment(payment.id); }}
+                                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-all"
+                                  title="Eliminar Pago"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1115,6 +1234,84 @@ export default function BillingManagement() {
                     Descargar Recibo (PDF)
                   </button>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Modal Editar Pago */}
+      <AnimatePresence>
+        {isEditPaymentModalOpen && selectedInvoiceForSummary && editingPayment && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Pencil className="h-6 w-6 text-indigo-400" />
+                  <h3 className="text-xl font-bold">Editar Pago</h3>
+                </div>
+                <button onClick={() => { setIsEditPaymentModalOpen(false); setEditingPayment(null); }} className="p-2 hover:bg-indigo-800 rounded-xl">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Monto del Pago</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input 
+                        type="number"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={partialPaymentData.amount}
+                        onChange={(e) => setPartialPaymentData({ ...partialPaymentData, amount: parseFloat(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Método de Pago</label>
+                    <select 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                      value={partialPaymentData.method}
+                      onChange={(e) => setPartialPaymentData({ ...partialPaymentData, method: e.target.value as any })}
+                    >
+                      <option value="transfer">Transferencia</option>
+                      <option value="cash">Efectivo</option>
+                      <option value="card">Tarjeta</option>
+                      <option value="other">Otro</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Referencia / Concepto</label>
+                    <textarea 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
+                      placeholder="Ej: Pago de honorarios primera etapa..."
+                      value={partialPaymentData.reference}
+                      onChange={(e) => setPartialPaymentData({ ...partialPaymentData, reference: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => { setIsEditPaymentModalOpen(false); setEditingPayment(null); }}
+                    className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-2xl transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleUpdatePayment}
+                    className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
