@@ -126,28 +126,6 @@ export interface DocumentMetadata {
   contentType?: string;
 }
 
-export interface SACSummary {
-  id: string;
-  caseId?: string;
-  caseNumber?: string;
-  title: string;
-  content: string;
-  date: string;
-  type: 'decreto' | 'expediente' | 'novedad';
-  importantDeadlines?: {
-    date: string;
-    description: string;
-  }[];
-  rawText?: string;
-  createdAt: string;
-}
-
-export interface SACConfig {
-  username: string;
-  password?: string; // We won't store this in Firestore for security, maybe just local state or env
-  lastSync?: string;
-}
-
 export interface Credential {
   id: string;
   username: string;

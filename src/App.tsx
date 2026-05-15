@@ -10,7 +10,6 @@ import Calendar from './components/Calendar';
 import TaskManagement from './components/TaskManagement';
 import ClientManagement from './components/ClientManagement';
 import BillingManagement from './components/BillingManagement';
-import SACSummary from './components/SACSummary';
 import Auth from './components/Auth';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -41,7 +40,6 @@ export default function App() {
                       <Route path="/collaboration" element={<Collaboration />} />
                       <Route path="/tasks" element={<TaskManagement />} />
                       <Route path="/billing" element={<BillingManagement />} />
-                      <Route path="/sac-summary" element={<SACSummary />} />
                       <Route path="/calendar" element={<Calendar />} />
                       <Route path="/clients" element={<ClientManagement />} />
                       <Route path="/users" element={<UserManagement />} />

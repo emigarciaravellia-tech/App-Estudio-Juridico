@@ -133,32 +133,6 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["clientId", "amount", "status", "issueDate"]
-    },
-    "SACSummary": {
-      "title": "SAC Summary",
-      "description": "AI-generated summary of SAC updates.",
-      "type": "object",
-      "properties": {
-        "caseId": { "type": "string" },
-        "caseNumber": { "type": "string" },
-        "title": { "type": "string" },
-        "content": { "type": "string" },
-        "date": { "type": "string", "format": "date" },
-        "type": { "type": "string", "enum": ["decreto", "expediente", "novedad"] },
-        "importantDeadlines": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "date": { "type": "string" },
-              "description": { "type": "string" }
-            }
-          }
-        },
-        "rawText": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["title", "content", "date", "type", "createdAt"]
     }
   },
   "firestore": {
@@ -189,10 +163,6 @@
     "/invoices/{invoiceId}": {
       "schema": "Invoice",
       "description": "Billing invoices and payments."
-    },
-    "/sac_summaries/{summaryId}": {
-      "schema": "SACSummary",
-      "description": "AI-generated summaries of SAC updates."
     }
   }
 }

@@ -16,13 +16,10 @@ import {
   ChevronRight,
   FileText,
   User,
-  Sparkles,
-  Loader2,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
 import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
@@ -32,9 +29,6 @@ export default function Dashboard() {
   const [pendingTasks, setPendingTasks] = useState<Task[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [upcomingInvoices, setUpcomingInvoices] = useState<Invoice[]>([]);
-  const [aiInsights, setAiInsights] = useState<string | null>(null);
-  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
-
   useEffect(() => {
     if (!profile) return;
 
@@ -100,58 +94,6 @@ export default function Dashboard() {
     };
   }, [profile]);
 
-  const generateAiInsights = async () => {
-    if (!profile) return;
-    setIsGeneratingInsights(true);
-    setAiInsights(null);
-
-    try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
-
-      const tasksText = pendingTasks.map(t => `- ${t.title} (Vence: ${t.dueDate})`).join('\n');
-      const eventsText = upcomingEvents.map(e => `- ${e.title} (Inicio: ${e.startTime})`).join('\n');
-      const casesText = recentCases.slice(0, 3).map(c => `- ${c.caseTitle || c.caseNumber} (Estado: ${c.status})`).join('\n');
-
-      const prompt = `Identidad y rol:
-      Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
-      Tu tarea es analizar la carga de trabajo actual de ${profile.displayName} y proporcionar 3-4 "Insights" o consejos estratégicos para hoy.
-
-      Tono y formato:
-      Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
-      Tus respuestas son muy concisas (máximo 300 caracteres en total).
-      IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave).
-
-      Contenido jurídico:
-      Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
-      Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
-
-      Límites claros:
-      No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
-      No inventás jurisprudencia ni datos. Si no sabés, lo decís.
-
-      TAREAS PENDIENTES:
-      ${tasksText || 'Ninguna'}
-      
-      EVENTOS PRÓXIMOS:
-      ${eventsText || 'Ninguno'}
-      
-      EXPEDIENTES RECIENTES:
-      ${casesText || 'Ninguno'}`;
-
-      const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-      });
-      setAiInsights(response.text);
-    } catch (err) {
-      console.error('AI Insights Error:', err);
-      setAiInsights('No he podido generar insights en este momento. ¡Que tengas un excelente día de trabajo!');
-    } finally {
-      setIsGeneratingInsights(false);
-    }
-  };
-
   const allDeadlines = [
     ...pendingTasks.map(t => ({ id: t.id, title: t.title, date: t.dueDate, type: 'task' as const })),
     ...upcomingEvents.map(e => ({ id: e.id, title: e.title, date: e.startTime, type: 'event' as const }))
@@ -169,14 +111,6 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={generateAiInsights}
-            disabled={isGeneratingInsights}
-            className="flex items-center gap-2 bg-emerald-50 text-emerald-600 border border-emerald-100 px-4 py-2 rounded-2xl hover:bg-emerald-100 transition-all shadow-sm disabled:opacity-50"
-          >
-            {isGeneratingInsights ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            <span className="text-sm font-bold">LexIA Insights</span>
-          </button>
           <button className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
             <Bell className="h-5 w-5" />
           </button>
@@ -185,40 +119,6 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
-
-      <AnimatePresence>
-        {aiInsights && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="bg-emerald-600 text-white p-6 rounded-[2.5rem] shadow-xl shadow-emerald-200 relative overflow-hidden group"
-          >
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
-              <Sparkles className="h-32 w-32" />
-            </div>
-            <div className="relative z-10 flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                  <Sparkles className="h-6 w-6" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-black tracking-tight">Análisis Estratégico LexIA</h4>
-                  <div className="text-emerald-50 text-sm font-medium mt-1 leading-relaxed max-w-3xl markdown-content">
-                    <ReactMarkdown>{aiInsights}</ReactMarkdown>
-                  </div>
-                </div>
-              </div>
-              <button 
-                onClick={() => setAiInsights(null)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Deadlines & Quick Actions */}

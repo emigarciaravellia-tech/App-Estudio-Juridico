@@ -17,7 +17,6 @@ export default function Collaboration() {
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -26,7 +25,7 @@ export default function Collaboration() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages]);
 
   // Fetch all users for private chats
   useEffect(() => {
@@ -115,64 +114,6 @@ export default function Collaboration() {
         readBy: [profile.uid]
       });
 
-      // Handle AI Assistant response
-      if (currentChatId === 'ai_assistant') {
-        setIsTyping(true);
-        try {
-          const { GoogleGenAI } = await import("@google/genai");
-          const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
-          
-          const prompt = `Identidad y rol:
-          Sos un asistente jurídico interno del estudio LexManage. No sos un abogado, pero asistís al equipo con información, criterios y redacción.
-          Respondés solo consultas relacionadas al trabajo del estudio: derecho, cobranzas, expedientes, clientes y procedimientos.
-          Si te preguntan algo fuera de ese ámbito, lo declinás amablemente y reencauzás la conversación.
-
-          Tono y formato:
-          Respondés de forma clara, directa y profesional. Sin tecnicismos innecesarios, pero sin perder precisión jurídica.
-          Tus respuestas son justas en extensión: ni un párrafo escueto ni una enciclopedia.
-          IMPORTANTE: Utiliza formato Markdown para mejorar la legibilidad (**negrita** para términos clave, ### para encabezados, listas para requisitos).
-
-          Contenido jurídico:
-          Siempre priorizás jurisprudencia y normativa argentina, y preferentemente cordobesa (TSJ Córdoba, Cámaras de Apelación de Córdoba).
-          Cuando des información legal, mencionás la fuente: artículo, ley, fallo o doctrina.
-          Si no tenés certeza sobre algo, lo decís claramente y recomendás verificar con el abogado a cargo.
-
-          Límites claros:
-          No tomás decisiones por el usuario ni das consejos definitivos: acompañás y sugerís.
-          No inventás jurisprudencia ni datos. Si no sabés, lo decís.
-          No compartís información de un cliente con consultas de otro.
-
-          Consulta del usuario (${profile.displayName}):
-          "${messageContent}"`;
-
-          const response = await genAI.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
-          });
-          const text = response.text;
-
-          await addDoc(collection(db, 'messages'), {
-            chatId: 'ai_assistant',
-            authorId: 'ai_bot',
-            authorName: 'LexIA Assistant',
-            content: text,
-            timestamp: new Date().toISOString(),
-            readBy: [profile.uid]
-          });
-        } catch (aiError) {
-          console.error("AI Error:", aiError);
-          await addDoc(collection(db, 'messages'), {
-            chatId: 'ai_assistant',
-            authorId: 'ai_bot',
-            authorName: 'LexIA Assistant',
-            content: "Lo siento, he tenido un problema procesando tu consulta. Por favor, intenta de nuevo en unos momentos.",
-            timestamp: new Date().toISOString(),
-            readBy: [profile.uid]
-          });
-        } finally {
-          setIsTyping(false);
-        }
-      }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'messages');
     }
@@ -185,7 +126,6 @@ export default function Collaboration() {
 
   const getChatTitle = () => {
     if (selectedChatId === 'global') return 'Foro de Despacho';
-    if (selectedChatId === 'ai_assistant') return 'LexIA Assistant';
     const otherUid = selectedChatId.split('_').find(id => id !== profile?.uid);
     const otherUser = users.find(u => u.uid === otherUid);
     return otherUser?.displayName || 'Chat Privado';
@@ -256,25 +196,6 @@ export default function Collaboration() {
                 {unreadCounts['global']}
               </div>
             )}
-          </button>
-
-          <button
-            onClick={() => setSelectedChatId('ai_assistant')}
-            className={`w-full flex items-center justify-between px-4 py-4 rounded-[1.5rem] transition-all duration-300 group ${
-              selectedChatId === 'ai_assistant' 
-                ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200' 
-                : 'text-slate-600 hover:bg-white hover:shadow-lg hover:shadow-slate-100'
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-2xl transition-colors ${selectedChatId === 'ai_assistant' ? 'bg-white/20' : 'bg-emerald-50 text-emerald-600'}`}>
-                <Smile className="h-5 w-5" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-sm tracking-tight">LexIA Assistant</p>
-                <p className={`text-[10px] font-medium ${selectedChatId === 'ai_assistant' ? 'text-emerald-100' : 'text-slate-400'}`}>Inteligencia Artificial</p>
-              </div>
-            </div>
           </button>
 
           <div className="pt-6 pb-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
@@ -410,22 +331,6 @@ export default function Collaboration() {
               <div className="text-center space-y-1">
                 <p className="text-lg font-black text-slate-900 tracking-tight">Comienza la conversación</p>
                 <p className="text-sm font-medium text-slate-400">Envía un mensaje para iniciar el chat.</p>
-              </div>
-            </div>
-          )}
-          
-          {isTyping && (
-            <div className="flex gap-3 md:gap-4 group">
-              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <Smile className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">LexIA Assistant</span>
-                <div className="bg-white p-3 rounded-[1.25rem] rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-1">
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1 }} className="h-1 w-1 bg-slate-400 rounded-full" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1 w-1 bg-slate-400 rounded-full" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1 w-1 bg-slate-400 rounded-full" />
-                </div>
               </div>
             </div>
           )}

@@ -4,13 +4,11 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, handleFirestoreError, OperationType } from '../firebase';
 import { Case, FollowUp, UserProfile, DocumentMetadata } from '../types';
 import { CaseRepository } from '../services/caseRepository';
-import { AIService } from '../services/aiService';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
-import { Plus, Search, Filter, Edit2, Trash2, X, ChevronRight, Save, Calendar as CalendarIcon, User, FileText, Upload, Download, ExternalLink, Loader2, Clock, Eye, Sparkles } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, X, ChevronRight, Save, Calendar as CalendarIcon, User, FileText, Upload, Download, ExternalLink, Loader2, Clock, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
 import ConfirmationModal from './ConfirmationModal';
 
 const JURISDICTIONS = [
@@ -50,9 +48,6 @@ export default function CaseManagement() {
   const [caseToDelete, setCaseToDelete] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DocumentMetadata | null>(null);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-
   const [formData, setFormData] = useState<Partial<Case>>({
     caseNumber: '',
     caseTitle: '',
@@ -237,22 +232,6 @@ export default function CaseManagement() {
       setIsUploading(false);
       // Reset file input
       e.target.value = '';
-    }
-  };
-
-  const generateAiSummary = async () => {
-    if (!viewingCase) return;
-    setIsGeneratingSummary(true);
-    setAiSummary(null);
-
-    try {
-      const summary = await AIService.summarizeCase(viewingCase);
-      setAiSummary(summary);
-    } catch (err) {
-      console.error('AI Summary Error:', err);
-      setAiSummary('Error al generar el resumen con IA. Por favor, intente más tarde.');
-    } finally {
-      setIsGeneratingSummary(false);
     }
   };
 
@@ -571,15 +550,7 @@ export default function CaseManagement() {
                   <p className="text-indigo-200 text-[10px] md:text-sm font-bold uppercase tracking-wider mt-1 truncate">Carátula: {viewingCase.caseTitle || '-'}</p>
                 </div>
                 <div className="flex items-center gap-2 md:gap-4">
-                  <button 
-                    onClick={generateAiSummary}
-                    disabled={isGeneratingSummary}
-                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 md:px-4 md:py-2 rounded-xl transition-all text-xs md:text-sm shadow-lg shadow-emerald-900/20"
-                  >
-                    {isGeneratingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    <span className="hidden sm:inline">Resumen IA</span>
-                  </button>
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedCase(viewingCase);
                       setFormData(viewingCase);
@@ -666,29 +637,6 @@ export default function CaseManagement() {
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">{viewingCase.observations || 'Sin observaciones.'}</p>
                   </section>
 
-                  {aiSummary && (
-                    <motion.section 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 space-y-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-emerald-700">
-                          <Sparkles className="h-5 w-5" />
-                          <h4 className="font-bold">Resumen Inteligente (LexIA)</h4>
-                        </div>
-                        <button onClick={() => setAiSummary(null)} className="text-emerald-400 hover:text-emerald-600">
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="text-sm text-slate-700 leading-relaxed markdown-content prose prose-sm prose-emerald max-w-none">
-                        <ReactMarkdown>{aiSummary}</ReactMarkdown>
-                      </div>
-                      <p className="text-[10px] text-emerald-600 font-medium italic">
-                        * Este resumen fue generado automáticamente por IA y debe ser verificado por un profesional.
-                      </p>
-                    </motion.section>
-                  )}
                 </div>
 
                 {/* Right Column: Seguimiento & Documentos */}
