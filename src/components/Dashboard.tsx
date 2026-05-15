@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, query, limit, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { collection, query, limit, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Case, Task, Event, Invoice } from '../types';
 import { useAuth } from '../hooks/useAuth';
@@ -16,10 +16,9 @@ import {
   ChevronRight,
   FileText,
   User,
-  X
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { motion } from 'motion/react';
+import { format, isBefore, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Dashboard() {

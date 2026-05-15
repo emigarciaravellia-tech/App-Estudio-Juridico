@@ -20,7 +20,6 @@ process.on('unhandledRejection', (reason, promise) => {
 console.log("[Server] Starting LexManage backend...");
 console.log("[Server] Environment:", process.env.NODE_ENV || "development");
 console.log("[Server] PORT:", process.env.PORT || 3000);
-console.log("[Server] GEMINI_API_KEY present:", !!process.env.GEMINI_API_KEY);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
