@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { UserProfile } from '../types';
@@ -13,6 +13,7 @@ interface AuthContextType {
   isAssistant: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshSession: (updates: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   isAssistant: false,
   login: async () => {},
   logout: () => {},
+  refreshSession: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -47,8 +49,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
 
+  const refreshSession = (updates: Partial<UserProfile>) => {
+    setProfile(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      localStorage.setItem('lex_session', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const login = async (username: string, password: string) => {
-    console.log("Attempting login for:", username);
     
     // Sign in anonymously to Firebase Auth to satisfy rules for Storage/Firestore
     try {
@@ -98,7 +108,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isLawyer: profile?.role === 'lawyer',
     isAssistant: profile?.role === 'assistant',
     login,
-    logout
+    logout,
+    refreshSession
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

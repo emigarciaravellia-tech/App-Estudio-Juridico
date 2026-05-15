@@ -59,7 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Tareas', path: '/tasks', icon: CheckSquare, roles: ['admin', 'lawyer', 'assistant'] },
     { name: 'Facturación', path: '/billing', icon: Receipt, roles: ['admin', 'lawyer'] },
     { name: 'Mensajes', path: '/collaboration', icon: MessageSquare, roles: ['admin', 'lawyer', 'assistant'], badge: unreadCount > 0 },
-    { name: 'Usuarios', path: '/users', icon: Shield, roles: ['admin'] },
+    { name: 'Mi Perfil', path: '/users', icon: Shield, roles: ['admin'] },
   ];
 
   const filteredNavItems = navItems.filter(item => 
