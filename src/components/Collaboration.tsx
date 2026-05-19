@@ -100,6 +100,19 @@ export default function Collaboration() {
 
   const initials = (name?: string) => name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 
+  const AVATAR_PALETTE = [
+    { bg: '#7a2e22', fg: '#fbf6e9' },
+    { bg: '#2d5a3d', fg: '#fbf6e9' },
+    { bg: '#6b4c11', fg: '#fbf6e9' },
+    { bg: '#3b5378', fg: '#fbf6e9' },
+    { bg: '#5a3472', fg: '#fbf6e9' },
+    { bg: '#1a5252', fg: '#fbf6e9' },
+  ];
+  const avatarColor = (uid: string) => {
+    const hash = uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+  };
+
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 140px)', minHeight: 520, gap: 12 }}>
 
@@ -191,7 +204,7 @@ export default function Collaboration() {
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: active ? 'rgba(26,20,12,0.2)' : 'rgba(221,201,159,0.12)', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarColor(u.uid).bg, color: avatarColor(u.uid).fg, display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, fontFamily: 'var(--font-sans)' }}>
                     {initials(u.displayName)}
                   </div>
                   <div style={{ textAlign: 'left', minWidth: 0 }}>
@@ -219,9 +232,23 @@ export default function Collaboration() {
           background: 'var(--paper-2)', flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 'var(--r)', background: 'var(--paper)', border: '0.5px solid var(--rule)', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--ink-2)', flexShrink: 0 }}>
-              {getChatTitle()[0]}
-            </div>
+            {(() => {
+              if (selectedChatId === 'global') {
+                return (
+                  <div style={{ width: 36, height: 36, borderRadius: 'var(--r)', background: 'var(--paper)', border: '0.5px solid var(--rule)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <Users size={16} color="var(--ink-2)" />
+                  </div>
+                );
+              }
+              const otherUid = selectedChatId.split('_').find(id => id !== profile?.uid) || '';
+              const other = users.find(u => u.uid === otherUid);
+              const ac = avatarColor(otherUid);
+              return (
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: ac.bg, color: ac.fg, display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-sans)', flexShrink: 0 }}>
+                  {initials(other?.displayName)}
+                </div>
+              );
+            })()}
             <div>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ink)', fontFamily: 'var(--font-display)' }}>{getChatTitle()}</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
@@ -262,8 +289,8 @@ export default function Collaboration() {
                   )}
                   <div style={{ display: 'flex', gap: 8, flexDirection: isMe ? 'row-reverse' : 'row', marginBottom: 6 }}>
                     {!isMe && (
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--paper-2)', border: '0.5px solid var(--rule)', display: 'grid', placeItems: 'center', flexShrink: 0, alignSelf: 'flex-end' }}>
-                        <UserIcon size={13} color="var(--ink-3)" />
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: avatarColor(m.authorId).bg, color: avatarColor(m.authorId).fg, display: 'grid', placeItems: 'center', flexShrink: 0, alignSelf: 'flex-end', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                        {initials(m.authorName)}
                       </div>
                     )}
                     <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', gap: 3, alignItems: isMe ? 'flex-end' : 'flex-start' }}>

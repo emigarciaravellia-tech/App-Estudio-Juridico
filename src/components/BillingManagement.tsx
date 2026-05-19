@@ -666,65 +666,47 @@ export default function BillingManagement() {
                 </button>
               </div>
 
-              <form onSubmit={handleSave} className="p-6 space-y-6 overflow-y-auto flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                    <select 
+              <form onSubmit={handleSave} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto', flex: 1 }}>
+                {/* Fila 1: Cliente + Expediente */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="lm-eyebrow">Cliente</label>
+                    <select
                       required
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="lm-select"
                       value={formData.clientId}
-                      onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                      onChange={e => setFormData({ ...formData, clientId: e.target.value })}
                     >
                       <option value="">Seleccionar Cliente</option>
-                      {clients.map(c => (
-                        <option key={c.uid} value={c.uid}>{c.displayName}</option>
-                      ))}
+                      {clients.map(c => <option key={c.uid} value={c.uid}>{c.displayName}</option>)}
                     </select>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Expediente Relacionado</label>
-                    <select 
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="lm-eyebrow">Expediente Relacionado</label>
+                    <select
+                      className="lm-select"
                       value={formData.caseId}
-                      onChange={(e) => setFormData({ ...formData, caseId: e.target.value })}
+                      onChange={e => setFormData({ ...formData, caseId: e.target.value })}
                     >
                       <option value="">Sin Expediente</option>
-                      {cases.map(c => (
-                        <option key={c.id} value={c.id}>{c.caseNumber} - {c.caseTitle}</option>
-                      ))}
+                      {cases.map(c => <option key={c.id} value={c.id}>{c.caseNumber} — {c.caseTitle}</option>)}
                     </select>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Fecha de Emisión</label>
-                    <input 
-                      type="date"
-                      required
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-                      value={formData.issueDate}
-                      onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
-                    />
+                {/* Fila 2: Fechas + Estado */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="lm-eyebrow">Fecha de Emisión</label>
+                    <input type="date" required className="lm-input" value={formData.issueDate} onChange={e => setFormData({ ...formData, issueDate: e.target.value })} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Fecha de Vencimiento</label>
-                    <input 
-                      type="date"
-                      required
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-                      value={formData.dueDate}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="lm-eyebrow">Fecha de Vencimiento</label>
+                    <input type="date" required className="lm-input" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Estado</label>
-                    <select 
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="lm-eyebrow">Estado</label>
+                    <select className="lm-select" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
                       <option value="pending">Pendiente</option>
                       <option value="partial">Pago Parcial</option>
                       <option value="paid">Pagada</option>
@@ -733,95 +715,95 @@ export default function BillingManagement() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Descripción General</label>
-                  <input 
+                {/* Descripción */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="lm-eyebrow">Descripción General</label>
+                  <input
                     type="text"
                     required
-                    placeholder="Ej: Honorarios Profesionales - Divorcio"
-                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Ej: Honorarios Profesionales — Divorcio"
+                    className="lm-input"
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={e => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Ítems / Conceptos</h4>
-                    <button 
+                {/* Ítems */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <p className="lm-eyebrow" style={{ fontSize: '0.7rem' }}>Ítems / Conceptos</p>
+                    <button
                       type="button"
                       onClick={handleAddItem}
                       style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--oxblood)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-sans)' }}
                     >
-                      <Plus className="h-3 w-3" /> Agregar Ítem
+                      <Plus style={{ width: 12, height: 12 }} /> Agregar Ítem
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    {formData.items.map((item, index) => (
-                      <div key={index} className="grid grid-cols-12 gap-3 items-end bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                        <div className="col-span-6 space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase">Descripción</label>
-                          <input 
-                            type="text"
-                            required
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                            value={item.description}
-                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase">Cant.</label>
-                          <input 
-                            type="number"
-                            required
-                            min="1"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
-                          />
-                        </div>
-                        <div className="col-span-3 space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase">P. Unitario</label>
-                          <input 
-                            type="number"
-                            required
-                            min="0"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                            value={item.unitPrice}
-                            onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value))}
-                          />
-                        </div>
-                        <div className="col-span-1 flex justify-end">
-                          <button 
-                            type="button"
-                            onClick={() => handleRemoveItem(index)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 transition-all"
-                            disabled={formData.items.length === 1}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                  {formData.items.map((item, index) => (
+                    <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 72px 120px 36px', gap: 10, alignItems: 'flex-end', background: 'var(--paper-2)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <label className="lm-eyebrow" style={{ fontSize: '0.65rem' }}>Descripción</label>
+                        <input
+                          type="text"
+                          required
+                          className="lm-input"
+                          style={{ fontSize: 12.5 }}
+                          value={item.description}
+                          onChange={e => handleItemChange(index, 'description', e.target.value)}
+                        />
                       </div>
-                    ))}
-                  </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <label className="lm-eyebrow" style={{ fontSize: '0.65rem' }}>Cant.</label>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          className="lm-input"
+                          style={{ fontSize: 12.5 }}
+                          value={item.quantity}
+                          onChange={e => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <label className="lm-eyebrow" style={{ fontSize: '0.65rem' }}>Precio Unitario</label>
+                        <input
+                          type="number"
+                          required
+                          min="0"
+                          className="lm-input"
+                          style={{ fontSize: 12.5 }}
+                          value={item.unitPrice}
+                          onChange={e => handleItemChange(index, 'unitPrice', parseFloat(e.target.value))}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(index)}
+                        disabled={formData.items.length === 1}
+                        style={{ padding: 6, background: 'none', border: 'none', cursor: formData.items.length === 1 ? 'default' : 'pointer', color: 'var(--ink-4)', alignSelf: 'flex-end', borderRadius: 'var(--r-sm)', transition: 'color .12s' }}
+                        onMouseEnter={e => { if (formData.items.length > 1) e.currentTarget.style.color = 'var(--oxblood)'; }}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-4)')}
+                      >
+                        <Trash2 style={{ width: 14, height: 14 }} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
-                  <div className="text-slate-500">
-                    <p className="text-xs uppercase font-bold tracking-widest">Total Factura</p>
-                    <p className="text-3xl font-black text-slate-900">
-                      ${formData.items.reduce((acc, item) => acc + item.total, 0).toLocaleString()}
+                {/* Footer del form */}
+                <div style={{ borderTop: '0.5px solid var(--rule)', paddingTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                  <div>
+                    <p className="lm-eyebrow" style={{ marginBottom: 2 }}>Total Factura</p>
+                    <p className="lm-mono" style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
+                      ${formData.items.reduce((acc, item) => acc + item.total, 0).toLocaleString('es-AR')}
                     </p>
                   </div>
-                  <div className="flex gap-3">
-                    <button 
-                      type="button"
-                      onClick={() => setIsModalOpen(false)}
-                      className="px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-2xl transition-all"
-                    >
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="lm-btn">
                       Cancelar
                     </button>
-                    <button type="submit" className="lm-btn lm-btn--primary" style={{ padding: '12px 28px' }}>
+                    <button type="submit" className="lm-btn lm-btn--primary" style={{ padding: '10px 24px' }}>
                       {editingInvoice ? 'Actualizar Factura' : 'Crear Factura'}
                     </button>
                   </div>
