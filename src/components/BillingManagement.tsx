@@ -461,9 +461,9 @@ export default function BillingManagement() {
     switch (status) {
       case 'paid': return 'bg-emerald-100 text-emerald-700';
       case 'pending': return 'bg-amber-100 text-amber-700';
-      case 'partial': return 'bg-indigo-100 text-indigo-700';
-      case 'cancelled': return 'bg-slate-100 text-slate-700';
-      default: return 'bg-slate-100 text-slate-700';
+      case 'partial': return 'bg-slate-100 text-slate-600';
+      case 'cancelled': return 'bg-slate-100 text-slate-500';
+      default: return 'bg-slate-100 text-slate-500';
     }
   };
 
@@ -656,12 +656,12 @@ export default function BillingManagement() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white w-full max-w-3xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between">
+              <div style={{ padding: '20px 24px', background: 'var(--sidebar-bg)', color: 'var(--sidebar-fg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="flex items-center gap-3">
-                  <Receipt className="h-6 w-6 text-indigo-400" />
-                  <h3 className="text-xl font-bold">{editingInvoice ? 'Editar Factura' : 'Nueva Factura'}</h3>
+                  <Receipt style={{ width: 20, height: 20, opacity: 0.7 }} />
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem' }}>{editingInvoice ? 'Editar Factura' : 'Nueva Factura'}</h3>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-indigo-800 rounded-xl transition-all">
+                <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--sidebar-fg)', cursor: 'pointer', padding: 6, borderRadius: 6, opacity: 0.7 }}>
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -751,7 +751,7 @@ export default function BillingManagement() {
                     <button 
                       type="button"
                       onClick={handleAddItem}
-                      className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                      style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--oxblood)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-sans)' }}
                     >
                       <Plus className="h-3 w-3" /> Agregar Ítem
                     </button>
@@ -821,10 +821,7 @@ export default function BillingManagement() {
                     >
                       Cancelar
                     </button>
-                    <button 
-                      type="submit"
-                      className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-                    >
+                    <button type="submit" className="lm-btn lm-btn--primary" style={{ padding: '12px 28px' }}>
                       {editingInvoice ? 'Actualizar Factura' : 'Crear Factura'}
                     </button>
                   </div>
@@ -864,11 +861,14 @@ export default function BillingManagement() {
                   <button
                     key={status}
                     onClick={() => handleStatusChange(invoiceForStatusChange, status)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${
-                      invoiceForStatusChange.status === status 
-                        ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' 
-                        : 'hover:bg-slate-50 text-slate-600'
-                    }`}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 16px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
+                      background: invoiceForStatusChange.status === status ? 'var(--paper-2)' : 'transparent',
+                      outline: invoiceForStatusChange.status === status ? '1px solid var(--rule)' : 'none',
+                      color: invoiceForStatusChange.status === status ? 'var(--ink)' : 'var(--ink-2)',
+                      fontFamily: 'var(--font-sans)', transition: 'background .12s',
+                    }}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-lg ${getStatusColor(status)}`}>
@@ -899,12 +899,12 @@ export default function BillingManagement() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
             >
-              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between">
+              <div style={{ padding: '20px 24px', background: 'var(--sidebar-bg)', color: 'var(--sidebar-fg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="flex items-center gap-3">
-                  <DollarSign className="h-6 w-6 text-indigo-400" />
-                  <h3 className="text-xl font-bold">Registrar Pago</h3>
+                  <DollarSign style={{ width: 20, height: 20, opacity: 0.7 }} />
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem' }}>Registrar Pago</h3>
                 </div>
-                <button onClick={() => setIsPartialModalOpen(false)} className="p-2 hover:bg-indigo-800 rounded-xl">
+                <button onClick={() => setIsPartialModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--sidebar-fg)', cursor: 'pointer', padding: 6, borderRadius: 6, opacity: 0.7 }}>
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -960,10 +960,7 @@ export default function BillingManagement() {
                   >
                     Cancelar
                   </button>
-                  <button 
-                    onClick={handleSavePartialPayment}
-                    className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-                  >
+                  <button onClick={handleSavePartialPayment} className="lm-btn lm-btn--primary" style={{ flex: 1, padding: '12px' }}>
                     Confirmar Pago
                   </button>
                 </div>
@@ -983,12 +980,12 @@ export default function BillingManagement() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
+              <div style={{ padding: '20px 24px', background: 'var(--sidebar-bg)', color: 'var(--sidebar-fg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="flex items-center gap-3">
-                  <Receipt className="h-6 w-6 text-indigo-400" />
-                  <h3 className="text-xl font-bold">Resumen de Factura</h3>
+                  <Receipt style={{ width: 20, height: 20, opacity: 0.7 }} />
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem' }}>Resumen de Factura</h3>
                 </div>
-                <button onClick={() => setIsSummaryModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-xl transition-all">
+                <button onClick={() => setIsSummaryModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--sidebar-fg)', cursor: 'pointer', padding: 6, borderRadius: 6, opacity: 0.7 }}>
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -1010,7 +1007,7 @@ export default function BillingManagement() {
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                      <div style={{ width: 40, height: 40, borderRadius: 'var(--r-sm)', background: 'var(--paper-2)', border: '0.5px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-2)' }}>
                         <User className="h-5 w-5" />
                       </div>
                       <div>
@@ -1076,11 +1073,11 @@ export default function BillingManagement() {
                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Historial de Pagos</h5>
                     <div className="space-y-3">
                       {selectedInvoiceForSummary.payments.map((payment, idx) => (
-                        <div key={idx} className="group flex justify-between items-center py-3 bg-slate-50 px-4 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-all">
+                        <div key={idx} className="group flex justify-between items-center py-3 bg-slate-50 px-4 rounded-2xl border border-slate-100 hover:border-slate-300 transition-all">
                           <div className="flex items-center gap-4">
                             <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
                               payment.method === 'cash' ? 'bg-emerald-50 text-emerald-600' :
-                              payment.method === 'transfer' ? 'bg-indigo-50 text-indigo-600' :
+                              payment.method === 'transfer' ? 'bg-slate-100 text-slate-600' :
                               payment.method === 'card' ? 'bg-amber-50 text-amber-600' :
                               'bg-slate-100 text-slate-600'
                             }`}>
@@ -1105,7 +1102,7 @@ export default function BillingManagement() {
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleEditPayment(selectedInvoiceForSummary, payment); }}
-                                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-all"
                                   title="Editar Pago"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
@@ -1126,7 +1123,7 @@ export default function BillingManagement() {
                   </div>
                 )}
 
-                <div className="bg-slate-900 rounded-2xl p-6 text-white flex justify-between items-center">
+                <div style={{ background: 'var(--sidebar-bg)', borderRadius: 'var(--r-md)', padding: 24, color: 'var(--sidebar-fg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Final</p>
                     <p className="text-3xl font-black">${selectedInvoiceForSummary.amount.toLocaleString()}</p>
@@ -1158,10 +1155,7 @@ export default function BillingManagement() {
                   Cerrar
                 </button>
                 {selectedInvoiceForSummary.status === 'paid' && (
-                  <button 
-                    onClick={() => generatePDF(selectedInvoiceForSummary)}
-                    className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
-                  >
+                  <button onClick={() => generatePDF(selectedInvoiceForSummary)} className="lm-btn lm-btn--primary" style={{ flex: 1, padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <FileText className="h-5 w-5" />
                     Descargar Recibo (PDF)
                   </button>
@@ -1181,12 +1175,12 @@ export default function BillingManagement() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
             >
-              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between">
+              <div style={{ padding: '20px 24px', background: 'var(--sidebar-bg)', color: 'var(--sidebar-fg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="flex items-center gap-3">
-                  <Pencil className="h-6 w-6 text-indigo-400" />
-                  <h3 className="text-xl font-bold">Editar Pago</h3>
+                  <Pencil style={{ width: 20, height: 20, opacity: 0.7 }} />
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem' }}>Editar Pago</h3>
                 </div>
-                <button onClick={() => { setIsEditPaymentModalOpen(false); setEditingPayment(null); }} className="p-2 hover:bg-indigo-800 rounded-xl">
+                <button onClick={() => { setIsEditPaymentModalOpen(false); setEditingPayment(null); }} style={{ background: 'none', border: 'none', color: 'var(--sidebar-fg)', cursor: 'pointer', padding: 6, borderRadius: 6, opacity: 0.7 }}>
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -1237,10 +1231,7 @@ export default function BillingManagement() {
                   >
                     Cancelar
                   </button>
-                  <button 
-                    onClick={handleUpdatePayment}
-                    className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-                  >
+                  <button onClick={handleUpdatePayment} className="lm-btn lm-btn--primary" style={{ flex: 1, padding: '12px' }}>
                     Guardar Cambios
                   </button>
                 </div>
