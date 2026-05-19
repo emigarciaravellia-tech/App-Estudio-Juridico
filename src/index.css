@@ -1,14 +1,243 @@
 @import "tailwindcss";
 
+/* ─── LexManage Design System ─────────────────────────────── */
+:root {
+  --paper:          #f5ecd8;
+  --paper-2:        #efe4cc;
+  --paper-3:        #fbf6e9;
+  --surface:        #fbf6e9;
+  --surface-soft:   #f3e8cf;
+
+  --ink:            #1a140c;
+  --ink-2:          #3a2e1f;
+  --ink-3:          #6b5b41;
+  --ink-mute:       #8e7e64;
+
+  --rule:           #ddc99f;
+  --rule-2:         #cbb37e;
+  --rule-soft:      #e9d9b3;
+
+  --oxblood:        #7a2e22;
+  --oxblood-2:      #5a1d14;
+  --oxblood-soft:   #efd9d2;
+  --forest:         #3d5a3d;
+  --forest-soft:    #d8e3d4;
+  --mustard:        #b8893f;
+  --mustard-soft:   #f1e2c0;
+  --slate-c:        #516b89;
+  --slate-soft:     #dee5ee;
+
+  --sidebar-bg:     #1a140c;
+  --sidebar-bg-2:   #2a1f12;
+  --sidebar-fg:     #ddc99f;
+  --sidebar-fg-mute:#8e7e64;
+  --sidebar-active-bg: #ddc99f;
+  --sidebar-active-fg: #1a140c;
+
+  --font-display:   'Spectral', 'Iowan Old Style', Georgia, serif;
+  --font-sans:      'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:      'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r:    5px;
+  --r-md: 7px;
+  --r-lg: 10px;
+
+  --shadow-sm: 0 1px 0 rgba(60,40,20,0.05);
+  --shadow:    0 1px 2px rgba(60,40,20,0.06), 0 2px 6px rgba(60,40,20,0.04);
+  --shadow-lg: 0 4px 12px rgba(60,40,20,0.10), 0 14px 40px rgba(60,40,20,0.08);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--paper);
+  font-family: var(--font-sans);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Paper grain texture */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.3  0 0 0 0 0.15  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+}
+
+/* ─── Typography ─────────────────────────────────────────── */
+.lm-display   { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.01em; }
+.lm-mono      { font-family: var(--font-mono); font-feature-settings: "ss02","zero"; font-variant-numeric: tabular-nums; }
+.lm-eyebrow   { font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ─── Cards ──────────────────────────────────────────────── */
+.lm-card {
+  background: var(--surface);
+  border: 0.5px solid var(--rule);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.lm-card--paper {
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.015) 100%), var(--surface);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────── */
+.lm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  border: 0.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper-3);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: background .14s, color .14s;
+}
+.lm-btn:hover { background: var(--ink-2); }
+.lm-btn--primary { background: var(--oxblood); border-color: var(--oxblood); color: #fdf3e9; }
+.lm-btn--primary:hover { background: var(--oxblood-2); }
+.lm-btn--ghost  { background: transparent; color: var(--ink-2); border-color: var(--rule); }
+.lm-btn--ghost:hover { background: var(--paper-2); }
+.lm-btn--sm { padding: 5px 10px; font-size: 11.5px; gap: 5px; }
+
+/* ─── Chips ───────────────────────────────────────────────── */
+.lm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.lm-chip .lm-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── Dividers ────────────────────────────────────────────── */
+.lm-divider        { height: 0.5px; background: var(--rule-soft); border: 0; margin: 0; }
+.lm-divider--strong { background: var(--rule); }
+.lm-divider--dotted { border-top: 1px dashed var(--rule-2); background: none; height: 0; }
+
+/* ─── Ledger rows ─────────────────────────────────────────── */
+.lm-row {
+  display: grid;
+  align-items: center;
+  border-bottom: 0.5px solid var(--rule-soft);
+  padding: 12px 16px;
+  transition: background .12s;
+  cursor: pointer;
+}
+.lm-row:hover { background: var(--paper-2); }
+.lm-row:last-child { border-bottom: none; }
+
+/* ─── Stamp ───────────────────────────────────────────────── */
+.lm-stamp {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1.2px solid var(--oxblood);
+  color: var(--oxblood);
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  border-radius: 2px;
+  transform: rotate(-2deg);
+  font-family: var(--font-display);
+  background: rgba(122,46,34,0.04);
+}
+
+/* ─── Folder tabs ─────────────────────────────────────────── */
+.lm-folder-tab {
+  padding: 7px 16px 6px;
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  border: 0.5px solid var(--rule-2);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background .14s;
+  font-family: var(--font-sans);
+  margin-bottom: -0.5px;
+}
+.lm-folder-tab--active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 -1px 0 var(--ink) inset, -1px 0 0 var(--rule-2), 1px 0 0 var(--rule-2);
+}
+.lm-folder-tab:not(.lm-folder-tab--active):hover { background: var(--surface-soft); }
+
+/* ─── Progress ────────────────────────────────────────────── */
+.lm-progress {
+  height: 3px;
+  background: var(--rule-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.lm-progress > span { display: block; height: 100%; background: var(--ink); border-radius: 2px; }
+
+/* ─── Link ────────────────────────────────────────────────── */
+.lm-link {
+  color: var(--oxblood);
+  text-decoration: underline;
+  text-decoration-color: rgba(122,46,34,0.3);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.lm-link:hover { text-decoration-color: var(--oxblood); }
+
+/* ─── Compact scrollbar ───────────────────────────────────── */
+.lm-scroll::-webkit-scrollbar       { width: 5px; height: 5px; }
+.lm-scroll::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+.lm-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ─── Inputs ──────────────────────────────────────────────── */
+.lm-input, .lm-textarea, .lm-select {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  background: var(--paper-3);
+  color: var(--ink);
+  border: 0.5px solid var(--rule);
+  border-radius: var(--r);
+  padding: 8px 11px;
+  outline: none;
+  transition: border .14s, background .14s;
+  width: 100%;
+}
+.lm-input:focus, .lm-textarea:focus, .lm-select:focus {
+  border-color: var(--oxblood);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(122,46,34,0.07);
+}
+.lm-input::placeholder { color: var(--ink-mute); }
+
+/* ─── Markdown (kept for compatibility) ───────────────────── */
 @layer base {
-  .markdown-content h1 { @apply text-2xl font-bold mb-4 text-inherit; }
-  .markdown-content h2 { @apply text-xl font-bold mb-3 text-inherit; }
-  .markdown-content h3 { @apply text-lg font-bold mb-2 text-inherit; }
-  .markdown-content p { @apply mb-2 last:mb-0; }
+  .markdown-content h1 { @apply text-2xl font-bold mb-4; }
+  .markdown-content h2 { @apply text-xl font-bold mb-3; }
+  .markdown-content h3 { @apply text-lg font-bold mb-2; }
+  .markdown-content p  { @apply mb-2 last:mb-0; }
   .markdown-content ul { @apply list-disc ml-4 mb-2; }
   .markdown-content ol { @apply list-decimal ml-4 mb-2; }
   .markdown-content strong { @apply font-bold; }
-  .markdown-content em { @apply italic; }
-  .markdown-content code { @apply bg-black/10 px-1 rounded font-mono text-sm; }
-  .markdown-content pre { @apply bg-black/10 p-3 rounded-lg font-mono text-sm overflow-x-auto mb-4; }
+  .markdown-content em     { @apply italic; }
+  .markdown-content code   { @apply bg-black/10 px-1 rounded font-mono text-sm; }
+  .markdown-content pre    { @apply bg-black/10 p-3 rounded-lg font-mono text-sm overflow-x-auto mb-4; }
 }
