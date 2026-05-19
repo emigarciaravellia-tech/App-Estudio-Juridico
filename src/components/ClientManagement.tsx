@@ -118,9 +118,9 @@ export default function ClientManagement() {
       </div>
 
       {/* Master–detail layout */}
-      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+      <div className="lm-master-detail">
         {/* List panel */}
-        <div style={{ width: 280, flexShrink: 0 }}>
+        <div className="lm-md-list">
           {/* Search */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-3)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '7px 11px', marginBottom: 10 }}>
             <Search size={13} color="var(--ink-3)" />
@@ -349,7 +349,7 @@ export default function ClientManagement() {
                   <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Nombre completo</label>
                   <input required className="lm-input" value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="lm-form-grid" style={{ gap: 12 }}>
                   <div>
                     <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Email</label>
                     <input type="email" required className="lm-input" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />

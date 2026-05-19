@@ -151,7 +151,7 @@ export default function TaskManagement() {
       </div>
 
       {/* Kanban */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+      <div className="lm-kanban" style={{ gap: 16 }}>
         {COLUMNS.map(col => (
           <div key={col.key}>
             {/* Column header */}
@@ -205,7 +205,7 @@ export default function TaskManagement() {
                   <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Descripción</label>
                   <textarea className="lm-textarea" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ resize: 'none' }} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="lm-form-grid" style={{ gap: 12 }}>
                   <div>
                     <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Vencimiento</label>
                     <input type="datetime-local" className="lm-input" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} />
@@ -237,7 +237,7 @@ export default function TaskManagement() {
                     initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
                     style={{ overflow: 'hidden', background: 'var(--paper-2)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px' }}
                   >
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <div className="lm-form-grid" style={{ gap: 10, marginBottom: 10 }}>
                       <div>
                         <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 4 }}>Frecuencia</label>
                         <select className="lm-select" value={formData.recurrence.frequency} onChange={e => setFormData({ ...formData, recurrence: { ...formData.recurrence, frequency: e.target.value as any } })}>

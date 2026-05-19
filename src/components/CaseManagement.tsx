@@ -282,7 +282,8 @@ export default function CaseManagement() {
       </div>
 
       {/* Ledger table */}
-      <div className="lm-card" style={{ overflow: 'hidden' }}>
+      <div className="lm-hscroll">
+      <div className="lm-card" style={{ overflow: 'hidden', minWidth: 720 }}>
         {/* Table header */}
         <div style={{
           display: 'grid',
@@ -359,6 +360,7 @@ export default function CaseManagement() {
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* ── Case Detail Drawer ── */}
@@ -473,7 +475,7 @@ export default function CaseManagement() {
                     </div>
 
                     {/* Parties */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div className="lm-two-col" style={{ gap: 12 }}>
                       {/* Client */}
                       <div className="lm-card" style={{ padding: '16px 18px' }}>
                         <p className="lm-eyebrow" style={{ marginBottom: 14 }}>Cliente (actor)</p>
@@ -765,7 +767,7 @@ export default function CaseManagement() {
                 <hr className="lm-divider" />
 
                 {/* Parties */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div className="lm-two-col" style={{ gap: 20 }}>
                   {/* Client */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -822,7 +824,7 @@ export default function CaseManagement() {
                 <hr className="lm-divider" />
 
                 {/* Lawyer + observations */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 20 }}>
+                <div className="lm-case-cols" style={{ gap: 20 }}>
                   <div>
                     <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Abogado asignado</label>
                     <select className="lm-select" value={formData.assignedLawyerId} onChange={e => setFormData({ ...formData, assignedLawyerId: e.target.value })}>

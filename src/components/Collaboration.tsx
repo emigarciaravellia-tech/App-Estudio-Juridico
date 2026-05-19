@@ -114,12 +114,10 @@ export default function Collaboration() {
   };
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 140px)', minHeight: 520, gap: 12 }}>
+    <div className="lm-collab" style={{ height: 'calc(100vh - 140px)', minHeight: 520, gap: 12 }}>
 
       {/* Sidebar de chats */}
-      <aside style={{
-        width: 268,
-        flexShrink: 0,
+      <aside className="lm-collab-aside" style={{
         background: 'var(--sidebar-bg)',
         borderRadius: 'var(--r-lg)',
         border: '0.5px solid rgba(221,201,159,0.15)',
@@ -224,7 +222,7 @@ export default function Collaboration() {
       </aside>
 
       {/* Ventana de chat */}
-      <div style={{ flex: 1, background: 'var(--surface)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+      <div className="lm-collab-chat" style={{ flex: 1, background: 'var(--surface)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Chat header */}
         <header style={{
           padding: '14px 20px', borderBottom: '0.5px solid var(--rule)',

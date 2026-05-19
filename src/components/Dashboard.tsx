@@ -123,7 +123,7 @@ export default function Dashboard() {
           <span style={{ width: 18, height: 1, background: 'var(--ink-mute)', display: 'inline-block' }} />
           Despacho · {dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 34, lineHeight: 1.1, letterSpacing: '-0.015em', color: 'var(--ink)', margin: 0 }}>
+        <h1 className="lm-dash-h1" style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 34, lineHeight: 1.1, letterSpacing: '-0.015em', color: 'var(--ink)', margin: 0 }}>
           Buenos días, <em style={{ fontStyle: 'italic', color: 'var(--oxblood)' }}>{firstName}</em>.
         </h1>
         <p style={{ margin: '8px 0 0', color: 'var(--ink-3)', fontSize: 13.5 }}>
@@ -149,7 +149,7 @@ export default function Dashboard() {
       />
 
       {/* 2-column grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginTop: 20 }}>
+      <div className="lm-dash-grid" style={{ gap: 20, marginTop: 20 }}>
         <AgendaList items={remaining} navigate={navigate} />
         <ActivityFeed cases={recentCases} navigate={navigate} />
       </div>
@@ -170,8 +170,7 @@ function HeroCard({ item, navigate }: { item: AgendaItem; navigate: (to: string)
     : daysAway < 0 ? `Hace ${-daysAway} días` : `En ${daysAway} días`;
 
   return (
-    <article className="lm-card lm-card--paper" style={{
-      display: 'grid', gridTemplateColumns: '128px 1fr auto',
+    <article className="lm-card lm-card--paper lm-hero" style={{
       overflow: 'hidden', marginBottom: 18,
     }}>
       {/* Date ticket */}
@@ -240,7 +239,7 @@ function StatsStrip({ activeCases, pendingTasks, invoiceTotal, invoiceCount, hea
   ];
 
   return (
-    <div className="lm-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', padding: 0 }}>
+    <div className="lm-card lm-stats-4" style={{ padding: 0 }}>
       {stats.map((s, i) => (
         <div key={i} style={{
           padding: '17px 20px',

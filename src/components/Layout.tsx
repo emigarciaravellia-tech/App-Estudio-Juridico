@@ -266,7 +266,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         {/* Topbar */}
-        <header style={{
+        <header className="lm-topbar" style={{
           display: 'flex', alignItems: 'center', gap: 14,
           padding: '10px 24px',
           borderBottom: '0.5px solid var(--rule)',
@@ -302,8 +302,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--ink)',
               }}
             />
-            <kbd style={{
-              display: 'inline-flex', alignItems: 'center',
+            <kbd className="hidden md:inline-flex" style={{
+              alignItems: 'center',
               padding: '0 5px', height: 18,
               fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
               color: 'var(--ink-3)',
@@ -347,7 +347,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="lm-scroll" style={{ flex: 1, overflowY: 'auto', background: 'var(--paper)' }}>
-          <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 32px 56px' }}>
+          <div className="lm-page-pad">
             {children}
           </div>
         </main>

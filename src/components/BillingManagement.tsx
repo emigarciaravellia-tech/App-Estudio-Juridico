@@ -506,7 +506,7 @@ export default function BillingManagement() {
       </div>
 
       {/* KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="lm-stats-3" style={{ gap: 12, marginBottom: 20 }}>
         {[
           { label: 'Total cobrado', value: `$${totalCobrado.toLocaleString('es-AR')}`, sub: 'ARS', color: 'var(--forest)', bg: 'var(--forest-soft)' },
           { label: 'Pendiente de cobro', value: `$${totalPendiente.toLocaleString('es-AR')}`, sub: 'ARS', color: 'var(--mustard)', bg: 'var(--mustard-soft)' },
@@ -544,6 +544,8 @@ export default function BillingManagement() {
         </div>
 
         {/* Table header */}
+        <div className="lm-hscroll">
+        <div style={{ minWidth: 720 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 120px 160px 120px 120px 80px', padding: '8px 16px', borderBottom: '0.5px solid var(--rule)', background: 'var(--paper-2)' }}>
           {[
             { label: 'Descripción / Fecha', field: 'issueDate' as const },
@@ -644,6 +646,8 @@ export default function BillingManagement() {
                 );
               })}
         </div>
+        </div>
+        </div>
       </div>
 
       {/* Modal Nueva/Editar Factura */}
@@ -668,7 +672,7 @@ export default function BillingManagement() {
 
               <form onSubmit={handleSave} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto', flex: 1 }}>
                 {/* Fila 1: Cliente + Expediente */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="lm-form-grid" style={{ gap: 16 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label className="lm-eyebrow">Cliente</label>
                     <select
@@ -695,7 +699,7 @@ export default function BillingManagement() {
                 </div>
 
                 {/* Fila 2: Fechas + Estado */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                <div className="lm-form-grid-3" style={{ gap: 16 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label className="lm-eyebrow">Fecha de Emisión</label>
                     <input type="date" required className="lm-input" value={formData.issueDate} onChange={e => setFormData({ ...formData, issueDate: e.target.value })} />

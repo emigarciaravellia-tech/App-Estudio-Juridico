@@ -35,7 +35,7 @@ export default function Auth() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'row', background: 'var(--paper-2)' }}>
 
       {/* Left panel — branding */}
-      <div style={{
+      <div className="lm-auth-brand" style={{
         width: '45%', minWidth: 320,
         background: 'var(--sidebar-bg)',
         color: 'var(--sidebar-fg)',
@@ -95,7 +95,7 @@ export default function Auth() {
       </div>
 
       {/* Right panel — form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+      <div className="lm-auth-form" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

@@ -228,6 +228,54 @@ body::before {
 }
 .lm-input::placeholder { color: var(--ink-mute); }
 
+/* ─── Responsive helpers ──────────────────────────────────── */
+.lm-page-pad { max-width: 1280px; margin: 0 auto; padding: 28px 32px 56px; }
+
+.lm-form-grid   { display: grid; grid-template-columns: 1fr 1fr; }
+.lm-form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.lm-dash-grid   { display: grid; grid-template-columns: 1.4fr 1fr; }
+.lm-kanban      { display: grid; grid-template-columns: repeat(3, 1fr); }
+.lm-stats-4     { display: grid; grid-template-columns: repeat(4, 1fr); }
+.lm-stats-3     { display: grid; grid-template-columns: repeat(3, 1fr); }
+.lm-two-col     { display: grid; grid-template-columns: 1fr 1fr; }
+.lm-hero        { display: grid; grid-template-columns: 128px 1fr auto; }
+.lm-case-cols   { display: grid; grid-template-columns: 1fr 2fr; }
+
+.lm-master-detail { display: flex; gap: 20px; align-items: flex-start; }
+.lm-md-list       { width: 280px; flex-shrink: 0; }
+
+.lm-collab       { display: flex; }
+.lm-collab-aside { width: 268px; flex-shrink: 0; }
+
+.lm-hscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+  .lm-page-pad { padding: 16px 14px 40px; }
+
+  .lm-form-grid,
+  .lm-form-grid-3,
+  .lm-dash-grid,
+  .lm-kanban,
+  .lm-stats-3,
+  .lm-two-col,
+  .lm-hero,
+  .lm-case-cols { grid-template-columns: 1fr; }
+
+  .lm-stats-4 { grid-template-columns: 1fr 1fr; }
+
+  .lm-master-detail { flex-direction: column; }
+  .lm-md-list { width: 100%; }
+
+  .lm-collab { flex-direction: column; height: auto !important; }
+  .lm-collab-aside { width: 100%; max-height: 40vh; }
+  .lm-collab-chat { min-height: 60vh; }
+
+  .lm-dash-h1 { font-size: 25px !important; }
+  .lm-topbar { padding: 8px 12px !important; gap: 8px !important; }
+  .lm-auth-brand { display: none !important; }
+  .lm-auth-form { padding: 24px 18px !important; }
+}
+
 /* ─── Markdown (kept for compatibility) ───────────────────── */
 @layer base {
   .markdown-content h1 { @apply text-2xl font-bold mb-4; }

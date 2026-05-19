@@ -119,7 +119,8 @@ export default function Calendar() {
     const days = eachDayOfInterval({ start: startOfWeek(monthStart), end: endOfWeek(monthEnd) });
 
     return (
-      <div className="lm-card" style={{ overflow: 'hidden' }}>
+      <div className="lm-hscroll">
+      <div className="lm-card" style={{ overflow: 'hidden', minWidth: 560 }}>
         {/* Day headers */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '0.5px solid var(--rule)' }}>
           {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
@@ -215,6 +216,7 @@ export default function Calendar() {
           </div>
         )}
       </div>
+      </div>
     );
   };
 
@@ -277,7 +279,8 @@ export default function Calendar() {
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
     return (
-      <div className="lm-card" style={{ overflow: 'hidden', height: 680, display: 'flex', flexDirection: 'column' }}>
+      <div className="lm-hscroll">
+      <div className="lm-card" style={{ overflow: 'hidden', height: 680, display: 'flex', flexDirection: 'column', minWidth: 700 }}>
         {/* Week day headers */}
         <div style={{ display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)', background: 'var(--paper-2)', borderBottom: '0.5px solid var(--rule)', flexShrink: 0 }}>
           <div />
@@ -328,6 +331,7 @@ export default function Calendar() {
             ))}
           </div>
         </div>
+      </div>
       </div>
     );
   };
@@ -402,7 +406,7 @@ export default function Calendar() {
                   <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Título</label>
                   <input required className="lm-input" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="lm-form-grid" style={{ gap: 12 }}>
                   <div>
                     <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Inicio</label>
                     <input type="datetime-local" className="lm-input" value={formData.startTime} onChange={e => setFormData({ ...formData, startTime: e.target.value })} />
@@ -412,7 +416,7 @@ export default function Calendar() {
                     <input type="datetime-local" className="lm-input" value={formData.endTime} onChange={e => setFormData({ ...formData, endTime: e.target.value })} />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="lm-form-grid" style={{ gap: 12 }}>
                   <div>
                     <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Tipo</label>
                     <select className="lm-select" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
@@ -447,7 +451,7 @@ export default function Calendar() {
                     initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
                     style={{ overflow: 'hidden', background: 'var(--paper-2)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r-md)', padding: 14 }}
                   >
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <div className="lm-form-grid" style={{ gap: 10, marginBottom: 10 }}>
                       <div>
                         <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 4 }}>Frecuencia</label>
                         <select className="lm-select" value={formData.recurrence.frequency} onChange={e => setFormData({ ...formData, recurrence: { ...formData.recurrence, frequency: e.target.value as any } })}>
