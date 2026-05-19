@@ -14,6 +14,27 @@ type NewUserForm = {
   password: string;
 };
 
+const MODAL_OVERLAY: React.CSSProperties = {
+  position: 'fixed', inset: 0, zIndex: 50,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: 16, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+};
+
+const MODAL_CARD: React.CSSProperties = {
+  background: 'var(--paper)', width: '100%', maxWidth: 440,
+  borderRadius: 'var(--r-lg)', boxShadow: '0 24px 64px rgba(0,0,0,0.28)',
+  overflow: 'hidden',
+};
+
+const MODAL_HEADER: React.CSSProperties = {
+  padding: '20px 24px',
+  background: 'var(--sidebar-bg)',
+  color: 'var(--sidebar-fg)',
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+};
+
+const MODAL_BODY: React.CSSProperties = { padding: 24, display: 'flex', flexDirection: 'column', gap: 16 };
+
 export default function UserManagement() {
   const { isAdmin, user: currentUser, refreshSession } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -112,39 +133,59 @@ export default function UserManagement() {
   };
 
   const roleLabel = (role: string) => role === 'lawyer' ? 'Abogado' : 'Auxiliar';
-  const roleBadge = (role: string) => role === 'lawyer' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700';
+  const roleChipStyle = (role: string): React.CSSProperties =>
+    role === 'lawyer'
+      ? { background: 'var(--forest-soft)', color: 'var(--forest)', border: '0.5px solid var(--forest)' }
+      : { background: 'var(--mustard-soft)', color: 'var(--mustard-dark)', border: '0.5px solid var(--mustard)' };
 
-  if (!isAdmin) return <div className="p-8 text-center text-red-500 font-bold">Acceso Denegado</div>;
+  if (!isAdmin) return (
+    <div className="lm-card" style={{ padding: 32, textAlign: 'center' }}>
+      <Shield style={{ margin: '0 auto 12px', color: 'var(--oxblood)', width: 32, height: 32 }} />
+      <p style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, color: 'var(--oxblood)' }}>Acceso Denegado</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-start justify-between gap-4">
+    <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* Page header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-            <Shield className="h-7 w-7 text-indigo-600" />
+          <p className="lm-eyebrow">Administración</p>
+          <h1 className="lm-display" style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Shield style={{ width: 22, height: 22, color: 'var(--oxblood)', flexShrink: 0 }} />
             Perfil de Administrador
-          </h2>
-          <p className="text-slate-500">Administre su perfil y credenciales de acceso.</p>
+          </h1>
         </div>
-        <button
-          onClick={() => setIsNewUserOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200 whitespace-nowrap"
-        >
-          <UserPlus className="h-4 w-4" />
+        <button className="lm-btn lm-btn--primary lm-btn--sm" onClick={() => setIsNewUserOpen(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+          <UserPlus style={{ width: 14, height: 14 }} />
           Nuevo Usuario
         </button>
       </div>
 
       {/* Profile card */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-indigo-200">
+      <div className="lm-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 'var(--r-md)',
+            background: 'var(--sidebar-bg)', color: 'var(--sidebar-fg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 900,
+            flexShrink: 0,
+          }}>
             {adminUser?.displayName?.charAt(0)?.toUpperCase() || 'A'}
           </div>
           <div>
-            <p className="font-black text-slate-900 text-lg">{adminUser?.displayName || '—'}</p>
-            <p className="text-sm text-slate-500">{adminUser?.email || '—'}</p>
-            <span className="mt-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700">
+            <p style={{ fontFamily: 'var(--font-sans)', fontWeight: 800, color: 'var(--ink)', fontSize: '1rem' }}>
+              {adminUser?.displayName || '—'}
+            </p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--ink-3)', marginTop: 1 }}>{adminUser?.email || '—'}</p>
+            <span className="lm-chip" style={{
+              marginTop: 4, display: 'inline-block',
+              background: 'var(--oxblood-soft)', color: 'var(--oxblood)',
+              border: '0.5px solid var(--oxblood)',
+            }}>
               Administrador
             </span>
           </div>
@@ -154,23 +195,37 @@ export default function UserManagement() {
             setProfileForm({ displayName: adminUser?.displayName || '', email: adminUser?.email || '' });
             setIsEditProfileOpen(true);
           }}
-          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
           title="Editar Perfil"
+          style={{
+            padding: 8, borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent',
+            color: 'var(--ink-3)', cursor: 'pointer', transition: 'color .15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--oxblood)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
         >
-          <Pencil className="h-5 w-5" />
+          <Pencil style={{ width: 16, height: 16 }} />
         </button>
       </div>
 
       {/* Credentials card */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
-            <Key className="h-6 w-6" />
+      <div className="lm-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 'var(--r-md)',
+            background: 'var(--paper-2)', border: '0.5px solid var(--rule)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--ink-3)', flexShrink: 0,
+          }}>
+            <Key style={{ width: 20, height: 20 }} />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Credenciales de Acceso</p>
-            <p className="font-black text-slate-900">{adminCred?.username || '—'}</p>
-            <p className="text-sm text-slate-400 tracking-widest">••••••••</p>
+            <p className="lm-eyebrow" style={{ marginBottom: 4 }}>Credenciales de Acceso</p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontWeight: 800, color: 'var(--ink)' }}>
+              {adminCred?.username || '—'}
+            </p>
+            <p className="lm-mono" style={{ fontSize: '0.75rem', color: 'var(--ink-3)', letterSpacing: '0.15em' }}>
+              ••••••••
+            </p>
           </div>
         </div>
         {adminCred && (
@@ -180,54 +235,86 @@ export default function UserManagement() {
               setCredForm({ username: adminCred.username, password: adminCred.password });
               setIsEditCredOpen(true);
             }}
-            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
             title="Editar Credenciales"
+            style={{
+              padding: 8, borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent',
+              color: 'var(--ink-3)', cursor: 'pointer', transition: 'color .15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--forest)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
           >
-            <Pencil className="h-5 w-5" />
+            <Pencil style={{ width: 16, height: 16 }} />
           </button>
         )}
       </div>
 
       {/* Team section */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-slate-400" />
-          <h3 className="font-bold text-slate-700">Equipo</h3>
-          <span className="ml-auto text-xs text-slate-400">{teamUsers.length} usuario{teamUsers.length !== 1 ? 's' : ''}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users style={{ width: 16, height: 16, color: 'var(--ink-3)' }} />
+          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, color: 'var(--ink-2)', fontSize: '0.9rem' }}>
+            Equipo
+          </span>
+          <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink-3)' }}>
+            {teamUsers.length} usuario{teamUsers.length !== 1 ? 's' : ''}
+          </span>
         </div>
+
         {teamUsers.length === 0 ? (
-          <div className="bg-slate-50 rounded-3xl border border-dashed border-slate-200 p-8 text-center">
-            <Users className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-            <p className="text-sm text-slate-400">Aún no hay abogados ni auxiliares registrados.</p>
+          <div className="lm-card" style={{
+            border: '1px dashed var(--rule)', textAlign: 'center', padding: 40,
+          }}>
+            <Users style={{ width: 28, height: 28, margin: '0 auto 10px', color: 'var(--ink-4)' }} />
+            <p style={{ fontSize: '0.85rem', color: 'var(--ink-3)' }}>
+              Aún no hay abogados ni auxiliares registrados.
+            </p>
             <button
               onClick={() => setIsNewUserOpen(true)}
-              className="mt-3 text-sm font-bold text-indigo-600 hover:text-indigo-700"
+              style={{
+                marginTop: 12, fontSize: '0.85rem', fontWeight: 700,
+                color: 'var(--oxblood)', background: 'none', border: 'none',
+                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+              }}
             >
               + Agregar el primero
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {teamUsers.map(u => (
-              <div key={u.uid} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-600 text-lg">
+              <div key={u.uid} className="lm-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 'var(--r-sm)',
+                    background: 'var(--paper-2)', border: '0.5px solid var(--rule)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'var(--font-sans)', fontWeight: 800, color: 'var(--ink-2)', fontSize: '1rem',
+                    flexShrink: 0,
+                  }}>
                     {u.displayName?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">{u.displayName || '—'}</p>
-                    <p className="text-xs text-slate-400">{u.email || '—'}</p>
-                    <span className={`mt-0.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${roleBadge(u.role)}`}>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, color: 'var(--ink)', fontSize: '0.9rem' }}>
+                      {u.displayName || '—'}
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--ink-3)', marginTop: 1 }}>{u.email || '—'}</p>
+                    <span className="lm-chip" style={{ marginTop: 4, display: 'inline-block', ...roleChipStyle(u.role) }}>
                       {roleLabel(u.role)}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => handleDeleteUser(u.uid)}
-                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                   title="Eliminar usuario"
+                  style={{
+                    padding: 8, borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent',
+                    color: 'var(--ink-4)', cursor: 'pointer', transition: 'color .15s',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--oxblood)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-4)')}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 style={{ width: 15, height: 15 }} />
                 </button>
               </div>
             ))}
@@ -235,25 +322,39 @@ export default function UserManagement() {
         )}
       </div>
 
-      {/* Orphan credentials warning — solo credenciales sin usuario asociado */}
+      {/* Orphan credentials warning */}
       {orphanCreds.length > 0 && (
-        <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-            <p className="text-sm font-bold text-amber-800">
+        <div style={{
+          background: 'var(--mustard-soft)', border: '0.5px solid var(--mustard)',
+          borderRadius: 'var(--r-lg)', padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AlertTriangle style={{ width: 18, height: 18, color: 'var(--mustard-dark)', flexShrink: 0 }} />
+            <p style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, color: 'var(--mustard-dark)', fontSize: '0.85rem' }}>
               {orphanCreds.length} credencial{orphanCreds.length > 1 ? 'es' : ''} huérfana{orphanCreds.length > 1 ? 's' : ''} detectada{orphanCreds.length > 1 ? 's' : ''} (sin usuario asociado).
             </p>
           </div>
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {orphanCreds.map(c => (
-              <div key={c.id} className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 border border-amber-100">
-                <p className="font-bold text-slate-800">{c.username}</p>
+              <div key={c.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--paper)', borderRadius: 'var(--r-md)',
+                padding: '10px 14px', border: '0.5px solid var(--mustard)',
+              }}>
+                <p style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--ink)', fontSize: '0.85rem' }}>
+                  {c.username}
+                </p>
                 <button
                   onClick={() => handleDeleteCred(c.id)}
-                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                   title="Eliminar credencial"
+                  style={{
+                    padding: 6, borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent',
+                    color: 'var(--ink-3)', cursor: 'pointer', transition: 'color .15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--oxblood)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 style={{ width: 14, height: 14 }} />
                 </button>
               </div>
             ))}
@@ -264,42 +365,48 @@ export default function UserManagement() {
       {/* Edit Profile Modal */}
       <AnimatePresence>
         {isEditProfileOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div style={MODAL_OVERLAY}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              style={MODAL_CARD}
             >
-              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between">
-                <h3 className="text-xl font-bold">Editar Perfil</h3>
-                <button onClick={() => setIsEditProfileOpen(false)} className="p-2 hover:bg-indigo-800 rounded-xl">
-                  <X className="h-6 w-6" />
+              <div style={MODAL_HEADER}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem' }}>
+                  Editar Perfil
+                </span>
+                <button onClick={() => setIsEditProfileOpen(false)} style={{
+                  background: 'none', border: 'none', color: 'var(--sidebar-fg)', cursor: 'pointer',
+                  padding: 6, borderRadius: 6, opacity: 0.7,
+                }}>
+                  <X style={{ width: 18, height: 18 }} />
                 </button>
               </div>
-              <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Nombre Completo</label>
+              <form onSubmit={handleSaveProfile} style={MODAL_BODY}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="lm-eyebrow">Nombre Completo</label>
                   <input
                     required
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="lm-input"
                     value={profileForm.displayName}
                     onChange={e => setProfileForm({ ...profileForm, displayName: e.target.value })}
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Email</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="lm-eyebrow">Email</label>
                   <input
                     type="email"
                     required
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="lm-input"
                     value={profileForm.email}
                     onChange={e => setProfileForm({ ...profileForm, email: e.target.value })}
                   />
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setIsEditProfileOpen(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-2xl transition-all">
+                <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                  <button type="button" onClick={() => setIsEditProfileOpen(false)}
+                    className="lm-btn" style={{ flex: 1 }}>
                     Cancelar
                   </button>
-                  <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all">
+                  <button type="submit" className="lm-btn lm-btn--primary" style={{ flex: 1 }}>
                     Guardar
                   </button>
                 </div>
@@ -312,95 +419,115 @@ export default function UserManagement() {
       {/* New User Modal */}
       <AnimatePresence>
         {isNewUserOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div style={MODAL_OVERLAY}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              style={MODAL_CARD}
             >
-              <div className="p-6 bg-indigo-600 text-white flex items-center justify-between">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
+              <div style={MODAL_HEADER}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <UserPlus style={{ width: 16, height: 16 }} />
                   Nuevo Usuario
-                </h3>
-                <button onClick={() => setIsNewUserOpen(false)} className="p-2 hover:bg-indigo-700 rounded-xl">
-                  <X className="h-6 w-6" />
+                </span>
+                <button onClick={() => setIsNewUserOpen(false)} style={{
+                  background: 'none', border: 'none', color: 'var(--sidebar-fg)', cursor: 'pointer',
+                  padding: 6, borderRadius: 6, opacity: 0.7,
+                }}>
+                  <X style={{ width: 18, height: 18 }} />
                 </button>
               </div>
-              <form onSubmit={handleCreateUser} className="p-6 space-y-4">
-                {/* Tipo de usuario */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Tipo de Usuario</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setNewUserForm({ ...newUserForm, role: 'lawyer' })}
-                      className={`py-3 px-4 rounded-2xl font-bold text-sm border-2 transition-all flex flex-col items-center gap-1 ${newUserForm.role === 'lawyer' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
-                    >
-                      <Briefcase className="h-4 w-4" />
-                      Abogado
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNewUserForm({ ...newUserForm, role: 'assistant' })}
-                      className={`py-3 px-4 rounded-2xl font-bold text-sm border-2 transition-all flex flex-col items-center gap-1 ${newUserForm.role === 'assistant' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
-                    >
-                      <Users className="h-4 w-4" />
-                      Auxiliar
-                    </button>
+              <form onSubmit={handleCreateUser} style={MODAL_BODY}>
+                {/* Role toggle */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label className="lm-eyebrow">Tipo de Usuario</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {([
+                      { key: 'lawyer', label: 'Abogado', Icon: Briefcase },
+                      { key: 'assistant', label: 'Auxiliar', Icon: Users },
+                    ] as const).map(({ key, label, Icon }) => {
+                      const active = newUserForm.role === key;
+                      const isLawyer = key === 'lawyer';
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setNewUserForm({ ...newUserForm, role: key })}
+                          style={{
+                            padding: '12px 16px', borderRadius: 'var(--r-md)',
+                            border: `1.5px solid ${active ? (isLawyer ? 'var(--forest)' : 'var(--mustard)') : 'var(--rule)'}`,
+                            background: active ? (isLawyer ? 'var(--forest-soft)' : 'var(--mustard-soft)') : 'var(--paper-2)',
+                            color: active ? (isLawyer ? 'var(--forest)' : 'var(--mustard-dark)') : 'var(--ink-3)',
+                            fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '0.85rem',
+                            cursor: 'pointer', transition: 'all .15s',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                          }}
+                        >
+                          <Icon style={{ width: 16, height: 16 }} />
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                {/* Datos del perfil */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Nombre Completo</label>
+
+                {/* Profile fields */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="lm-eyebrow">Nombre Completo</label>
                   <input
                     required
                     placeholder="Ej: Juan Pérez"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="lm-input"
                     value={newUserForm.displayName}
                     onChange={e => setNewUserForm({ ...newUserForm, displayName: e.target.value })}
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Email</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="lm-eyebrow">Email</label>
                   <input
                     type="email"
                     required
                     placeholder="usuario@estudio.com"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="lm-input"
                     value={newUserForm.email}
                     onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })}
                   />
                 </div>
-                {/* Credenciales */}
-                <div className="border-t border-slate-100 pt-4 space-y-3">
-                  <p className="text-xs font-bold text-slate-400 uppercase">Credenciales de Acceso</p>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Usuario</label>
+
+                {/* Credentials */}
+                <div style={{
+                  borderTop: '0.5px solid var(--rule-soft)', paddingTop: 16,
+                  display: 'flex', flexDirection: 'column', gap: 12,
+                }}>
+                  <p className="lm-eyebrow">Credenciales de Acceso</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="lm-eyebrow">Usuario (Login)</label>
                     <input
                       required
                       placeholder="nombre.apellido"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="lm-input"
                       value={newUserForm.username}
                       onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Contraseña</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="lm-eyebrow">Contraseña</label>
                     <input
                       type="password"
                       required
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="lm-input"
                       value={newUserForm.password}
                       onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })}
                     />
                   </div>
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setIsNewUserOpen(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-2xl transition-all">
+
+                <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                  <button type="button" onClick={() => setIsNewUserOpen(false)}
+                    className="lm-btn" style={{ flex: 1 }}>
                     Cancelar
                   </button>
-                  <button type="submit" disabled={isCreating} className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all disabled:opacity-60">
-                    {isCreating ? 'Creando...' : 'Crear Usuario'}
+                  <button type="submit" disabled={isCreating} className="lm-btn lm-btn--primary" style={{ flex: 1 }}>
+                    {isCreating ? 'Creando…' : 'Crear Usuario'}
                   </button>
                 </div>
               </form>
@@ -412,42 +539,49 @@ export default function UserManagement() {
       {/* Edit Credentials Modal */}
       <AnimatePresence>
         {isEditCredOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div style={MODAL_OVERLAY}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              style={MODAL_CARD}
             >
-              <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
-                <h3 className="text-xl font-bold">Editar Credenciales</h3>
-                <button onClick={() => setIsEditCredOpen(false)} className="p-2 hover:bg-slate-800 rounded-xl">
-                  <X className="h-6 w-6" />
+              <div style={MODAL_HEADER}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Key style={{ width: 16, height: 16 }} />
+                  Editar Credenciales
+                </span>
+                <button onClick={() => setIsEditCredOpen(false)} style={{
+                  background: 'none', border: 'none', color: 'var(--sidebar-fg)', cursor: 'pointer',
+                  padding: 6, borderRadius: 6, opacity: 0.7,
+                }}>
+                  <X style={{ width: 18, height: 18 }} />
                 </button>
               </div>
-              <form onSubmit={handleSaveCred} className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Usuario (Login)</label>
+              <form onSubmit={handleSaveCred} style={MODAL_BODY}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="lm-eyebrow">Usuario (Login)</label>
                   <input
                     required
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="lm-input"
                     value={credForm.username}
                     onChange={e => setCredForm({ ...credForm, username: e.target.value })}
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Nueva Contraseña</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="lm-eyebrow">Nueva Contraseña</label>
                   <input
                     type="password"
                     required
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="lm-input"
                     value={credForm.password}
                     onChange={e => setCredForm({ ...credForm, password: e.target.value })}
                   />
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setIsEditCredOpen(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-2xl transition-all">
+                <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                  <button type="button" onClick={() => setIsEditCredOpen(false)}
+                    className="lm-btn" style={{ flex: 1 }}>
                     Cancelar
                   </button>
-                  <button type="submit" className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all">
+                  <button type="submit" className="lm-btn lm-btn--primary" style={{ flex: 1 }}>
                     Guardar
                   </button>
                 </div>
