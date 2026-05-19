@@ -18,362 +18,378 @@ export default function ClientManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [viewingClient, setViewingClient] = useState<UserProfile | null>(null);
+  const [editingClient, setEditingClient] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    displayName: '',
-    email: '',
-    phone: '',
-    cuit: '',
-    dni: '',
-    additionalInfo: '',
-    role: 'client' as const
+    displayName: '', email: '', phone: '', cuit: '', dni: '', additionalInfo: '', role: 'client' as const
   });
 
   useEffect(() => {
     const q = query(collection(db, 'users'), where('role', '==', 'client'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setClients(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'users');
-    });
+    const unsubClients = onSnapshot(q, snap => {
+      setClients(snap.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile)));
+    }, e => handleFirestoreError(e, OperationType.LIST, 'users'));
 
     const qCases = query(collection(db, 'cases'));
-    const unsubscribeCases = onSnapshot(qCases, (snapshot) => {
-      setCases(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Case)));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'cases');
-    });
+    const unsubCases = onSnapshot(qCases, snap => {
+      setCases(snap.docs.map(d => ({ id: d.id, ...d.data() } as Case)));
+    }, e => handleFirestoreError(e, OperationType.LIST, 'cases'));
 
-    return () => {
-      unsubscribe();
-      unsubscribeCases();
-    };
+    return () => { unsubClients(); unsubCases(); };
   }, []);
+
+  const openNew = () => {
+    setEditingClient(null);
+    setFormData({ displayName: '', email: '', phone: '', cuit: '', dni: '', additionalInfo: '', role: 'client' });
+    setIsModalOpen(true);
+  };
+
+  const openEdit = (client: UserProfile) => {
+    setEditingClient(client);
+    setFormData({ displayName: client.displayName || '', email: client.email || '', phone: client.phone || '', cuit: client.cuit || '', dni: client.dni || '', additionalInfo: client.additionalInfo || '', role: 'client' });
+    setIsModalOpen(true);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
-      if (viewingClient) {
-        const path = `users/${viewingClient.uid}`;
-        await updateDoc(doc(db, 'users', viewingClient.uid), formData);
+      if (editingClient) {
+        await updateDoc(doc(db, 'users', editingClient.uid), formData);
       } else {
-        const path = 'users';
-        const newDocRef = doc(collection(db, 'users'));
-        await setDoc(newDocRef, {
-          ...formData,
-          uid: newDocRef.id,
-          createdAt: new Date().toISOString()
-        });
+        const newRef = doc(collection(db, 'users'));
+        await setDoc(newRef, { ...formData, uid: newRef.id, createdAt: new Date().toISOString() });
       }
       setIsModalOpen(false);
-      setViewingClient(null);
-      setFormData({ displayName: '', email: '', phone: '', cuit: '', dni: '', additionalInfo: '', role: 'client' });
+      setEditingClient(null);
     } catch (err) {
-      console.error('Error saving client:', err);
       setError('Error al guardar el cliente. Verifique sus permisos.');
-      handleFirestoreError(err, viewingClient ? OperationType.UPDATE : OperationType.CREATE, viewingClient ? `users/${viewingClient.uid}` : 'users');
+      handleFirestoreError(err, editingClient ? OperationType.UPDATE : OperationType.CREATE, editingClient ? `users/${editingClient.uid}` : 'users');
     }
   };
 
-  const handleDelete = async (uid: string) => {
-    setClientToDelete(uid);
-    setIsDeleteModalOpen(true);
-  };
+  const handleDelete = (uid: string) => { setClientToDelete(uid); setIsDeleteModalOpen(true); };
 
   const confirmDelete = async () => {
     if (!clientToDelete) return;
-    const path = `users/${clientToDelete}`;
     try {
       await deleteDoc(doc(db, 'users', clientToDelete));
       if (viewingClient?.uid === clientToDelete) setViewingClient(null);
       setIsDeleteModalOpen(false);
       setClientToDelete(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
+      handleFirestoreError(error, OperationType.DELETE, `users/${clientToDelete}`);
     }
   };
 
-  const filteredClients = clients.filter(c => 
-    c.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.cuit?.includes(searchTerm) ||
-    c.dni?.includes(searchTerm)
+  const filteredClients = clients.filter(c =>
+    (c.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.cuit || '').includes(searchTerm) ||
+    (c.dni || '').includes(searchTerm)
   );
 
-  const ClientDetails = ({ client }: { client: UserProfile }) => {
-    const clientCases = cases.filter(c => 
-      c.clientName?.toLowerCase() === client.displayName?.toLowerCase() || 
-      c.clientData?.email === client.email
-    );
+  const clientCases = viewingClient
+    ? cases.filter(c => c.clientName?.toLowerCase() === viewingClient.displayName?.toLowerCase() || c.clientData?.email === viewingClient.email)
+    : [];
 
-    return (
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
-              <User className="h-8 w-8" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900">{client.displayName}</h3>
-              <p className="text-slate-500">Cliente desde {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => {
-                setFormData({
-                  displayName: client.displayName || '',
-                  email: client.email || '',
-                  phone: client.phone || '',
-                  cuit: client.cuit || '',
-                  dni: client.dni || '',
-                  additionalInfo: client.additionalInfo || '',
-                  role: 'client'
-                });
-                setIsModalOpen(true);
-              }}
-              className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-            >
-              <Edit2 className="h-5 w-5" />
-            </button>
-            {(isAdmin || isLawyer) && (
-              <button 
-                onClick={() => handleDelete(client.uid)}
-                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Información de Contacto</h4>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-slate-600">
-                <Mail className="h-4 w-4" />
-                <span className="text-sm font-medium">{client.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-600">
-                <Phone className="h-4 w-4" />
-                <span className="text-sm font-medium">{client.phone || 'No registrado'}</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-600">
-                <FileText className="h-4 w-4" />
-                <span className="text-sm font-medium">DNI: {client.dni || 'No registrado'}</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-600">
-                <FileText className="h-4 w-4" />
-                <span className="text-sm font-medium">CUIT: {client.cuit || 'No registrado'}</span>
-              </div>
-            </div>
-          </div>
-          <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Información Adicional</h4>
-            <p className="text-sm text-slate-600 italic">
-              {client.additionalInfo || 'Sin información adicional registrada.'}
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-indigo-600" />
-            Expedientes Relacionados
-          </h4>
-          <div className="space-y-2">
-            {clientCases.length > 0 ? (
-              clientCases.map(c => (
-                <button 
-                  key={c.id}
-                  onClick={() => navigate('/expedientes')}
-                  className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-bold text-slate-900">{c.caseTitle}</p>
-                      <p className="text-xs text-slate-500">Exp: {c.caseNumber} • {c.status}</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-indigo-600 transition-all" />
-                </button>
-              ))
-            ) : (
-              <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <p className="text-slate-400 text-sm">No hay expedientes vinculados a este cliente.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const initials = (name?: string) => name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Gestión de Clientes</h2>
-          <p className="text-slate-500">Administre la base de datos de clientes y sus expedientes.</p>
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <p className="lm-eyebrow" style={{ marginBottom: 6 }}>Directorio</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <h1 className="lm-display" style={{ fontSize: 28, fontWeight: 500, color: 'var(--ink)', margin: 0, lineHeight: 1.1 }}>
+              Clientes
+            </h1>
+            <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 4 }}>
+              {clients.length} {clients.length === 1 ? 'cliente registrado' : 'clientes registrados'}
+            </p>
+          </div>
+          {(isAdmin || isLawyer || isAssistant) && (
+            <button onClick={openNew} className="lm-btn lm-btn--primary lm-btn--sm">
+              <Plus size={13} /> Nuevo cliente
+            </button>
+          )}
         </div>
-        {(isAdmin || isLawyer || isAssistant) && (
-          <button 
-            onClick={() => {
-              setViewingClient(null);
-              setFormData({ displayName: '', email: '', phone: '', cuit: '', dni: '', additionalInfo: '', role: 'client' });
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-          >
-            <Plus className="h-5 w-5" />
-            Nuevo Cliente
-          </button>
-        )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* List */}
-        <div className={`lg:w-1/3 space-y-4 ${viewingClient ? 'hidden lg:block' : 'block'}`}>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre, email o CUIT..." 
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+      {/* Master–detail layout */}
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        {/* List panel */}
+        <div style={{ width: 280, flexShrink: 0 }}>
+          {/* Search */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--paper-3)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '7px 11px', marginBottom: 10 }}>
+            <Search size={13} color="var(--ink-3)" />
+            <input
+              placeholder="Buscar clientes…"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, fontFamily: 'var(--font-sans)', fontSize: 12.5, color: 'var(--ink)' }}
             />
           </div>
-          <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
-            {filteredClients.map(client => (
-              <button 
-                key={client.uid}
-                onClick={() => setViewingClient(client)}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${
-                  viewingClient?.uid === client.uid 
-                    ? 'bg-indigo-50 border-indigo-200 shadow-md' 
-                    : 'bg-white border-slate-100 hover:border-indigo-100'
-                }`}
-              >
-                <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold ${
-                  viewingClient?.uid === client.uid ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {client.displayName?.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-900 truncate">{client.displayName}</p>
-                  <p className="text-xs text-slate-500 truncate">{client.email}</p>
-                </div>
-                <ChevronRight className={`h-5 w-5 transition-all ${viewingClient?.uid === client.uid ? 'text-indigo-600 translate-x-1' : 'text-slate-300'}`} />
-              </button>
-            ))}
+
+          {/* Client list */}
+          <div className="lm-card lm-scroll" style={{ overflow: 'hidden', maxHeight: '70vh', overflowY: 'auto' }}>
+            {filteredClients.length === 0 && (
+              <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+                <Users size={24} color="var(--rule)" style={{ margin: '0 auto 8px', display: 'block' }} />
+                <p style={{ fontSize: 12.5, color: 'var(--ink-mute)', fontStyle: 'italic' }}>
+                  {searchTerm ? 'Sin resultados.' : 'Sin clientes aún.'}
+                </p>
+              </div>
+            )}
+            {filteredClients.map(client => {
+              const active = viewingClient?.uid === client.uid;
+              return (
+                <button
+                  key={client.uid}
+                  onClick={() => setViewingClient(client)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', textAlign: 'left',
+                    padding: '10px 14px',
+                    background: active ? 'var(--paper-2)' : 'transparent',
+                    border: 0, borderBottom: '0.5px solid var(--rule-soft)',
+                    cursor: 'pointer',
+                    transition: 'background .12s',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--paper-3)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: active ? 'var(--oxblood)' : 'var(--paper-2)',
+                    color: active ? '#fbf6e9' : 'var(--ink-3)',
+                    border: '0.5px solid var(--rule)',
+                    display: 'grid', placeItems: 'center',
+                    fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-display)',
+                  }}>
+                    {initials(client.displayName)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {client.displayName}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {client.email}
+                    </p>
+                  </div>
+                  <ChevronRight size={13} color={active ? 'var(--ink-3)' : 'var(--rule)'} />
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Details */}
-        <div className={`lg:w-2/3 ${viewingClient ? 'block' : 'hidden lg:block'}`}>
+        {/* Detail panel */}
+        <div style={{ flex: 1, minWidth: 0 }}>
           <AnimatePresence mode="wait">
             {viewingClient ? (
-              <motion.div 
+              <motion.div
                 key={viewingClient.uid}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="bg-white p-4 md:p-8 rounded-3xl border border-slate-100 shadow-xl relative"
+                exit={{ opacity: 0, y: -8 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
               >
-                <button 
-                  onClick={() => setViewingClient(null)}
-                  className="lg:hidden absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-full transition-all z-10"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-                <ClientDetails client={viewingClient} />
+                {/* Ficha header */}
+                <div className="lm-card" style={{ padding: '20px 24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{
+                        width: 52, height: 52, borderRadius: '50%',
+                        background: 'var(--oxblood)', color: '#fbf6e9',
+                        display: 'grid', placeItems: 'center',
+                        fontSize: 20, fontWeight: 600, fontFamily: 'var(--font-display)',
+                        flexShrink: 0,
+                      }}>
+                        {initials(viewingClient.displayName)}
+                      </div>
+                      <div>
+                        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: 'var(--ink)', fontFamily: 'var(--font-display)' }}>
+                          {viewingClient.displayName}
+                        </h2>
+                        <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>
+                          Cliente desde {viewingClient.createdAt ? new Date(viewingClient.createdAt).toLocaleDateString('es-AR') : 'N/D'}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => openEdit(viewingClient)} className="lm-btn lm-btn--ghost lm-btn--sm">
+                        <Edit2 size={12} /> Editar
+                      </button>
+                      {(isAdmin || isLawyer) && (
+                        <button onClick={() => handleDelete(viewingClient.uid)} style={{ background: 'none', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '5px 8px', cursor: 'pointer', color: 'var(--ink-3)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--oxblood)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact info grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px 24px' }}>
+                    {[
+                      ['Email', viewingClient.email],
+                      ['Teléfono', viewingClient.phone],
+                      ['DNI', viewingClient.dni],
+                      ['CUIT / CUIL', viewingClient.cuit],
+                    ].map(([k, v]) => (
+                      <div key={k}>
+                        <p className="lm-eyebrow" style={{ marginBottom: 2, fontSize: 9.5 }}>{k}</p>
+                        <p style={{ margin: 0, fontSize: 13, color: v ? 'var(--ink)' : 'var(--ink-mute)', fontStyle: v ? 'normal' : 'italic' }}>{v || 'No registrado'}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {viewingClient.additionalInfo && (
+                    <>
+                      <hr className="lm-divider" style={{ margin: '14px 0' }} />
+                      <p className="lm-eyebrow" style={{ marginBottom: 6, fontSize: 9.5 }}>Notas</p>
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, fontStyle: 'italic' }}>{viewingClient.additionalInfo}</p>
+                    </>
+                  )}
+                </div>
+
+                {/* Related cases */}
+                <div>
+                  <p className="lm-eyebrow" style={{ marginBottom: 10 }}>
+                    Expedientes vinculados ({clientCases.length})
+                  </p>
+                  {clientCases.length > 0 ? (
+                    <div className="lm-card" style={{ overflow: 'hidden' }}>
+                      {clientCases.map((c, i) => (
+                        <button
+                          key={c.id}
+                          onClick={() => navigate('/cases')}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            width: '100%', textAlign: 'left', padding: '12px 16px',
+                            background: 'none', border: 0, cursor: 'pointer',
+                            borderBottom: i < clientCases.length - 1 ? '0.5px solid var(--rule-soft)' : 'none',
+                            transition: 'background .12s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--paper-2)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                        >
+                          <div style={{ width: 32, height: 32, borderRadius: 'var(--r)', background: 'var(--paper-2)', border: '0.5px solid var(--rule)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                            <Briefcase size={14} color="var(--ink-3)" />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.caseTitle || 'Sin carátula'}</p>
+                            <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>
+                              <span className="lm-mono">{c.caseNumber}</span> · {c.status}
+                            </p>
+                          </div>
+                          <ChevronRight size={13} color="var(--rule)" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="lm-card" style={{ padding: '24px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 13, color: 'var(--ink-mute)', fontStyle: 'italic', margin: 0 }}>
+                        Sin expedientes vinculados a este cliente.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center p-12 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mb-4">
-                  <Users className="h-10 w-10" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900">Seleccione un cliente</h3>
-                <p className="text-slate-500 max-w-xs">Elija un cliente de la lista para ver su perfil detallado y expedientes relacionados.</p>
-              </div>
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center' }}
+              >
+                <Users size={36} color="var(--rule)" style={{ marginBottom: 14 }} />
+                <h3 className="lm-display" style={{ fontSize: 17, color: 'var(--ink-3)', margin: '0 0 6px', fontStyle: 'italic' }}>
+                  Seleccione un cliente
+                </h3>
+                <p style={{ fontSize: 13, color: 'var(--ink-mute)', maxWidth: 280, margin: 0 }}>
+                  Elija un cliente de la lista para ver su ficha y expedientes relacionados.
+                </p>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal nuevo/editar cliente */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-md h-full md:h-auto md:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(20,15,8,0.5)', backdropFilter: 'blur(3px)' }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              style={{ background: 'var(--paper)', width: '100%', maxWidth: 480, borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '0.5px solid var(--rule)' }}
             >
-              <div className="p-6 bg-indigo-900 text-white flex items-center justify-between sticky top-0 z-10">
-                <h3 className="text-xl font-bold">{viewingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-indigo-800 rounded-full transition-all">
-                  <X className="h-6 w-6" />
+              <div style={{ padding: '18px 24px', background: 'var(--sidebar-bg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div>
+                  <p className="lm-eyebrow" style={{ color: 'var(--sidebar-fg-mute)', marginBottom: 2 }}>
+                    {editingClient ? 'Modificar ficha' : 'Nuevo registro'}
+                  </p>
+                  <h3 className="lm-display" style={{ fontSize: 17, color: 'var(--sidebar-fg)', margin: 0 }}>
+                    {editingClient ? 'Editar cliente' : 'Nuevo cliente'}
+                  </h3>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--sidebar-fg-mute)', padding: 6 }}>
+                  <X size={18} />
                 </button>
               </div>
-              <form onSubmit={handleSave} className="p-6 space-y-4 flex-1 overflow-y-auto">
+
+              <form onSubmit={handleSave} className="lm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
+                  <div style={{ padding: '10px 14px', background: 'var(--oxblood-soft)', border: '0.5px solid var(--oxblood)', borderRadius: 'var(--r)', fontSize: 12.5, color: 'var(--oxblood)' }}>
                     {error}
                   </div>
                 )}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Nombre Completo</label>
-                  <input required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} />
+
+                <div>
+                  <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Nombre completo</label>
+                  <input required className="lm-input" value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Email</label>
-                    <input type="email" required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Email</label>
+                    <input type="email" required className="lm-input" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Teléfono</label>
-                    <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                  <div>
+                    <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Teléfono</label>
+                    <input className="lm-input" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">DNI</label>
-                    <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} />
+                  <div>
+                    <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>DNI</label>
+                    <input className="lm-input" value={formData.dni} onChange={e => setFormData({ ...formData, dni: e.target.value })} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">CUIT / CUIL</label>
-                    <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.cuit} onChange={e => setFormData({...formData, cuit: e.target.value})} />
+                  <div>
+                    <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>CUIT / CUIL</label>
+                    <input className="lm-input" value={formData.cuit} onChange={e => setFormData({ ...formData, cuit: e.target.value })} />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Información Adicional</label>
-                  <textarea className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none focus:ring-2 focus:ring-indigo-500" rows={3} value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})} />
+                <div>
+                  <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Notas adicionales</label>
+                  <textarea className="lm-textarea" rows={3} value={formData.additionalInfo} onChange={e => setFormData({ ...formData, additionalInfo: e.target.value })} style={{ resize: 'none' }} />
                 </div>
-                <button type="submit" className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl mt-4 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-                  {viewingClient ? 'Guardar Cambios' : 'Crear Cliente'}
-                </button>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4 }}>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="lm-btn lm-btn--ghost lm-btn--sm">Cancelar</button>
+                  <button type="submit" className="lm-btn lm-btn--primary lm-btn--sm">
+                    {editingClient ? 'Guardar cambios' : 'Crear cliente'}
+                  </button>
+                </div>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-      <ConfirmationModal 
+
+      <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        title="Eliminar Cliente"
+        title="Eliminar cliente"
         message="¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer."
         onConfirm={confirmDelete}
-        onCancel={() => {
-          setIsDeleteModalOpen(false);
-          setClientToDelete(null);
-        }}
+        onCancel={() => { setIsDeleteModalOpen(false); setClientToDelete(null); }}
       />
     </div>
   );

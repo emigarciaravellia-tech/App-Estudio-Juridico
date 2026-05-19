@@ -38,10 +38,10 @@ export default function BillingManagement() {
 
   if (!canModify) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-        <h3 className="text-xl font-bold text-slate-900">Acceso Restringido</h3>
-        <p className="text-slate-500">Solo administradores y abogados pueden acceder a la sección de facturación.</p>
+      <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+        <AlertCircle size={36} color="var(--oxblood)" style={{ margin: '0 auto 14px', display: 'block' }} />
+        <h3 className="lm-display" style={{ fontSize: 18, color: 'var(--ink)', marginBottom: 6 }}>Acceso restringido</h3>
+        <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>Solo administradores y abogados pueden acceder a la sección de facturación.</p>
       </div>
     );
   }
@@ -476,241 +476,173 @@ export default function BillingManagement() {
     }
   };
 
+  const totalCobrado = invoices.reduce((acc, inv) => {
+    if (inv.status === 'paid') return acc + inv.amount;
+    if (inv.status === 'partial') return acc + (inv.payments?.reduce((pAcc, p) => pAcc + p.amount, 0) || 0);
+    return acc;
+  }, 0);
+  const totalPendiente = invoices.reduce((acc, inv) => {
+    if (inv.status === 'pending') return acc + inv.amount;
+    if (inv.status === 'partial') { const paid = inv.payments?.reduce((pAcc, p) => pAcc + p.amount, 0) || 0; return acc + (inv.amount - paid); }
+    return acc;
+  }, 0);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Facturación y Cobros</h2>
-          <p className="text-slate-500">Gestión de honorarios, gastos y pagos de clientes.</p>
-        </div>
-        {canModify && (
-          <button 
-            onClick={() => { resetForm(); setIsModalOpen(true); }}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-          >
-            <Plus className="h-5 w-5" />
-            Nueva Factura
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <DollarSign className="h-6 w-6" />
-          </div>
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <p className="lm-eyebrow" style={{ marginBottom: 6 }}>Administración</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Cobrado</p>
-            <p className="text-xl font-black text-slate-900">
-              ${invoices.reduce((acc, inv) => {
-                if (inv.status === 'paid') return acc + inv.amount;
-                if (inv.status === 'partial') return acc + (inv.payments?.reduce((pAcc, p) => pAcc + p.amount, 0) || 0);
-                return acc;
-              }, 0).toLocaleString()}
-            </p>
+            <h1 className="lm-display" style={{ fontSize: 28, fontWeight: 500, color: 'var(--ink)', margin: 0, lineHeight: 1.1 }}>Facturación</h1>
+            <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 4 }}>Honorarios, gastos y pagos de clientes.</p>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-            <Clock className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pendiente</p>
-            <p className="text-xl font-black text-slate-900">
-              ${invoices.reduce((acc, inv) => {
-                if (inv.status === 'pending') return acc + inv.amount;
-                if (inv.status === 'partial') {
-                  const paid = inv.payments?.reduce((pAcc, p) => pAcc + p.amount, 0) || 0;
-                  return acc + (inv.amount - paid);
-                }
-                return acc;
-              }, 0).toLocaleString()}
-            </p>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-            <Receipt className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Facturas Activas</p>
-            <p className="text-xl font-black text-slate-900">
-              {invoices.filter(i => i.status !== 'cancelled').length}
-            </p>
-          </div>
+          {canModify && (
+            <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="lm-btn lm-btn--primary lm-btn--sm">
+              <Plus size={13} /> Nueva factura
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <input 
-              type="text"
-              placeholder="Buscar por cliente, expediente o descripción..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+      {/* KPI strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+        {[
+          { label: 'Total cobrado', value: `$${totalCobrado.toLocaleString('es-AR')}`, sub: 'ARS', color: 'var(--forest)', bg: 'var(--forest-soft)' },
+          { label: 'Pendiente de cobro', value: `$${totalPendiente.toLocaleString('es-AR')}`, sub: 'ARS', color: 'var(--mustard)', bg: 'var(--mustard-soft)' },
+          { label: 'Facturas activas', value: `${invoices.filter(i => i.status !== 'cancelled').length}`, sub: 'registros', color: 'var(--slate-c)', bg: 'var(--slate-soft)' },
+        ].map(stat => (
+          <div key={stat.label} className="lm-card" style={{ padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'center' }}>
+            <div style={{ width: 8, height: 36, borderRadius: 4, background: stat.color, flexShrink: 0 }} />
+            <div>
+              <p className="lm-eyebrow" style={{ marginBottom: 3 }}>{stat.label}</p>
+              <p className="lm-mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>{stat.value}</p>
+              <p style={{ fontSize: 10, color: 'var(--ink-mute)', margin: 0 }}>{stat.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="lm-card" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--rule)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', background: 'var(--paper-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200, background: 'var(--paper-3)', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '7px 11px' }}>
+            <Search size={13} color="var(--ink-3)" />
+            <input
+              placeholder="Buscar por cliente, expediente o descripción…"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, fontFamily: 'var(--font-sans)', fontSize: 12.5, color: 'var(--ink)' }}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-slate-400 mr-2" />
-            <select 
-              className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Todos los estados</option>
-              <option value="pending">Pendientes</option>
-              <option value="paid">Pagadas</option>
-              <option value="partial">Parciales</option>
-              <option value="cancelled">Canceladas</option>
-            </select>
-          </div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: '6px 10px', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', background: 'var(--paper-3)', fontFamily: 'var(--font-sans)', fontSize: 12.5, color: 'var(--ink)', outline: 'none' }}>
+            <option value="all">Todos los estados</option>
+            <option value="pending">Pendientes</option>
+            <option value="paid">Pagadas</option>
+            <option value="partial">Parciales</option>
+            <option value="cancelled">Canceladas</option>
+          </select>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th 
-                  className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                  onClick={() => toggleSort('issueDate')}
-                >
-                  <div className="flex items-center gap-2">
-                    Factura / Fecha de Creación
-                    {sortField === 'issueDate' && (
-                      <span className="text-indigo-600">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                  onClick={() => toggleSort('dueDate')}
-                >
-                  <div className="flex items-center gap-2">
-                    Vencimiento
-                    {sortField === 'dueDate' && (
-                      <span className="text-indigo-600">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente / Expediente</th>
-                <th 
-                  className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                  onClick={() => toggleSort('amount')}
-                >
-                  <div className="flex items-center gap-2">
-                    Monto
-                    {sortField === 'amount' && (
-                      <span className="text-indigo-600">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        {/* Table header */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 120px 160px 120px 120px 80px', padding: '8px 16px', borderBottom: '0.5px solid var(--rule)', background: 'var(--paper-2)' }}>
+          {[
+            { label: 'Descripción / Fecha', field: 'issueDate' as const },
+            { label: 'Vencimiento', field: 'dueDate' as const },
+            { label: 'Cliente', field: null },
+            { label: 'Monto', field: 'amount' as const },
+            { label: 'Estado', field: null },
+            { label: '', field: null },
+          ].map(({ label, field }) => (
+            <span
+              key={label}
+              className="lm-eyebrow"
+              style={{ fontSize: 9.5, cursor: field ? 'pointer' : 'default' }}
+              onClick={() => field && toggleSort(field)}
+            >
+              {label}{field && sortField === field ? (sortOrder === 'asc' ? ' ↑' : ' ↓') : ''}
+            </span>
+          ))}
+        </div>
+
+        {filteredInvoices.length === 0 && (
+          <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+            <Receipt size={28} color="var(--rule)" style={{ margin: '0 auto 10px', display: 'block' }} />
+            <p style={{ fontSize: 13, color: 'var(--ink-mute)', fontStyle: 'italic' }}>Sin facturas para los filtros aplicados.</p>
+          </div>
+        )}
+
+        <div>
               {filteredInvoices.map((invoice) => {
                 const client = clients.find(c => c.uid === invoice.clientId);
                 const caseObj = cases.find(c => c.id === invoice.caseId);
                 const isOverdue = new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid';
-                
+                const invoiceStatusCfg: Record<string, { bg: string; color: string; dot: string }> = {
+                  paid:      { bg: 'var(--forest-soft)',   color: 'var(--forest)',   dot: 'var(--forest)' },
+                  pending:   { bg: 'var(--mustard-soft)',  color: 'var(--mustard)',  dot: 'var(--mustard)' },
+                  partial:   { bg: 'var(--slate-soft)',    color: 'var(--slate-c)',  dot: 'var(--slate-c)' },
+                  cancelled: { bg: 'var(--paper-2)',       color: 'var(--ink-mute)', dot: 'var(--ink-mute)' },
+                };
+                const statusLabels: Record<string, string> = { paid: 'Pagada', pending: 'Pendiente', partial: 'Parcial', cancelled: 'Cancelada' };
+                const sCfg = invoiceStatusCfg[invoice.status] ?? invoiceStatusCfg['pending'];
+
                 return (
-                  <motion.tr 
-                    layout 
-                    key={invoice.id} 
-                    className="hover:bg-slate-50 transition-colors cursor-pointer"
+                  <motion.div
+                    layout
+                    key={invoice.id}
+                    className="lm-row"
+                    style={{ gridTemplateColumns: '2fr 120px 160px 120px 120px 80px' }}
                     onClick={() => {
                       setSelectedInvoiceForSummary(invoice);
                       setIsSummaryModalOpen(true);
                     }}
                   >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 truncate max-w-[200px]">{invoice.description}</p>
-                          <p className="text-xs text-slate-400">{format(parseISO(invoice.issueDate), 'dd MMM yyyy', { locale: es })}</p>
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 'var(--r)', background: 'var(--paper-2)', border: '0.5px solid var(--rule)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <FileText size={13} color="var(--ink-3)" />
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className={`flex items-center gap-2 font-medium ${isOverdue ? 'text-red-600' : 'text-slate-600'}`}>
-                        <Calendar className="h-4 w-4" />
-                        {format(parseISO(invoice.dueDate), 'dd MMM yyyy', { locale: es })}
-                        {isOverdue && <AlertCircle className="h-3 w-3 animate-pulse" />}
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{invoice.description}</p>
+                        <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-mute)' }}>{format(parseISO(invoice.issueDate), 'dd MMM yyyy', { locale: es })}</p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                          <User className="h-3 w-3 text-indigo-500" />
-                          {client?.displayName || 'Cliente Desconocido'}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                          <Briefcase className="h-3 w-3" />
-                          {caseObj?.caseNumber || 'Sin Expediente'}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-black text-slate-900">${invoice.amount.toLocaleString()}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">{invoice.currency}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(invoice.status)}`}>
-                        {getStatusIcon(invoice.status)}
-                        {invoice.status === 'paid' ? 'Pagada' : 
-                         invoice.status === 'pending' ? 'Pendiente' : 
-                         invoice.status === 'partial' ? 'Parcial' : 'Cancelada'}
+                    </div>
+                    <div>
+                      <p className="lm-mono" style={{ fontSize: 12, color: isOverdue ? 'var(--oxblood)' : 'var(--ink-3)', margin: 0 }}>
+                        {format(parseISO(invoice.dueDate), 'dd/MM/yy')}
+                      </p>
+                      {isOverdue && <p style={{ margin: 0, fontSize: 10, color: 'var(--oxblood)', fontWeight: 700 }}>VENCIDA</p>}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{client?.displayName || '—'}</p>
+                      <p className="lm-mono" style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>{caseObj?.caseNumber || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="lm-mono" style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>${invoice.amount.toLocaleString('es-AR')}</p>
+                      <p style={{ margin: 0, fontSize: 10, color: 'var(--ink-mute)' }}>{invoice.currency}</p>
+                    </div>
+                    <div>
+                      <span className="lm-chip" style={{ background: sCfg.bg, color: sCfg.color }}>
+                        <span className="lm-dot" style={{ background: sCfg.dot }} />
+                        {statusLabels[invoice.status] ?? invoice.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                        {canModify && (
-                          <>
-                            <button 
-                              onClick={() => openEditModal(invoice)}
-                              className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                              title="Editar"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => { setInvoiceToDelete(invoice.id); setIsDeleteModalOpen(true); }}
-                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </>
-                        )}
-                        <button 
-                          onClick={() => { setInvoiceForStatusChange(invoice); setIsStatusModalOpen(true); }}
-                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                          title="Cambiar Estado"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }} onClick={e => e.stopPropagation()}>
+                      {canModify && (
+                        <>
+                          <button onClick={() => openEditModal(invoice)} title="Editar" style={{ background: 'none', border: 0, cursor: 'pointer', padding: 5, color: 'var(--ink-3)', borderRadius: 'var(--r-sm)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+                            <Pencil size={13} />
+                          </button>
+                          <button onClick={() => { setInvoiceToDelete(invoice.id); setIsDeleteModalOpen(true); }} title="Eliminar" style={{ background: 'none', border: 0, cursor: 'pointer', padding: 5, color: 'var(--ink-3)', borderRadius: 'var(--r-sm)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--oxblood)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => { setInvoiceForStatusChange(invoice); setIsStatusModalOpen(true); }} title="Cambiar estado" style={{ background: 'none', border: 0, cursor: 'pointer', padding: 5, color: 'var(--ink-3)', borderRadius: 'var(--r-sm)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+                        <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  </motion.div>
                 );
               })}
-              {filteredInvoices.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <Receipt className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-400 font-medium">No se encontraron facturas.</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
 
