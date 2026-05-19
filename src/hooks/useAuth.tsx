@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { UserProfile } from '../types';
 
@@ -98,6 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     setProfile(null);
     localStorage.removeItem('lex_session');
+    signOut(auth).catch(err => console.error("Error signing out:", err));
   };
 
   const value = {
