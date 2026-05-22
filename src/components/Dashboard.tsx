@@ -49,7 +49,6 @@ export default function Dashboard() {
   const [pendingInvoiceTotal, setPendingInvoiceTotal] = useState(0);
   const [pendingInvoiceCount, setPendingInvoiceCount] = useState(0);
   const [hearingCount, setHearingCount] = useState(0);
-  const [semaforoTasks, setSemaforoTasks] = useState<Task[]>([]);
   const [semaforoEvents, setSemaforoEvents] = useState<Event[]>([]);
 
   useEffect(() => {
@@ -87,18 +86,10 @@ export default function Dashboard() {
     // Stats: upcoming hearings this month
     getDocs(query(collection(db, 'events'), where('type', '==', 'hearing'))).then(s => setHearingCount(s.size));
 
-    // Semáforo: tareas pendientes en los próximos 30 días
-    const in30Days = addDays(new Date(), 30).toISOString().slice(0, 10);
-    getDocs(query(
-      collection(db, 'tasks'),
-      where('assignedUserId', '==', profile.uid),
-      where('status', '==', 'pending'),
-      orderBy('dueDate', 'asc'),
-      limit(50),
-    )).then(s => setSemaforoTasks(s.docs.map(d => ({ id: d.id, ...d.data() } as Task))));
-
+    // Semáforo: solo eventos tipo "deadline" (Plazo / Vencimiento) en los próximos 30 días
     getDocs(query(
       collection(db, 'events'),
+      where('type', '==', 'deadline'),
       where('startTime', '>=', new Date().toISOString()),
       where('startTime', '<=', addDays(new Date(), 30).toISOString()),
       orderBy('startTime', 'asc'),
@@ -177,7 +168,7 @@ export default function Dashboard() {
       </div>
 
       {/* Semáforo de vencimientos */}
-      <SemaforoVencimientos tasks={semaforoTasks} events={semaforoEvents} navigate={navigate} />
+      <SemaforoVencimientos events={semaforoEvents} navigate={navigate} />
 
       {/* Frase de la semana */}
       <FraseSemanal />
@@ -426,32 +417,21 @@ type SemaforoItem = {
 };
 
 function SemaforoVencimientos({
-  tasks, events, navigate,
+  events, navigate,
 }: {
-  tasks: Task[];
   events: Event[];
   navigate: (to: string) => void;
 }) {
   const today = new Date();
 
-  const items: SemaforoItem[] = [
-    ...tasks
-      .filter(t => t.dueDate)
-      .map(t => ({
-        id: t.id,
-        title: t.title,
-        date: t.dueDate,
-        kind: 'tarea' as const,
-        daysAway: differenceInCalendarDays(new Date(t.dueDate + 'T12:00:00'), today),
-      })),
-    ...events.map(e => ({
+  const items: SemaforoItem[] = events
+    .map(e => ({
       id: e.id,
       title: e.title,
       date: e.startTime?.slice(0, 10) || '',
-      kind: (e.type === 'hearing' ? 'audiencia' : e.type === 'deadline' ? 'vencimiento' : 'reunión') as SemaforoItem['kind'],
+      kind: 'vencimiento' as const,
       daysAway: differenceInCalendarDays(new Date((e.startTime?.slice(0, 10) || '') + 'T12:00:00'), today),
-    })),
-  ]
+    }))
     .filter(i => i.date && i.daysAway >= 0 && i.daysAway <= 30)
     .sort((a, b) => a.daysAway - b.daysAway);
 
@@ -504,7 +484,7 @@ function SemaforoVencimientos({
         <div>
           <div className="lm-eyebrow">Semáforo</div>
           <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 17, margin: '3px 0 0', color: 'var(--ink)' }}>
-            Vencimientos próximos · 30 días
+            Próximos vencimientos procesales
           </h3>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

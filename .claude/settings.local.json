@@ -8,7 +8,12 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(npx vite *)",
-      "Bash(git commit -m 'feat: semáforo de vencimientos y frase jurídica semanal en dashboard *)"
+      "Bash(git commit -m 'feat: semáforo de vencimientos y frase jurídica semanal en dashboard *)",
+      "Bash(npx firebase *)",
+      "Bash(grep -Hm1 ^description: 'C:\\\\Users\\\\emiga\\\\OneDrive\\\\Escritorio\\\\Proyectos Personales\\\\App-Estudio-Juridico/.claude/skills/*/SKILL.md')",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(git commit -m 'feat: semáforo muestra solo vencimientos procesales \\(tipo deadline\\) *)"
     ]
   }
 }
