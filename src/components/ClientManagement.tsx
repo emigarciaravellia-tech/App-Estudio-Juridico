@@ -5,12 +5,13 @@ import { UserProfile, Case } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { Users, Plus, Search, Mail, Phone, FileText, ChevronRight, User, Trash2, Edit2, X, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ConfirmationModal from './ConfirmationModal';
 
 export default function ClientManagement() {
   const { isAdmin, isLawyer, isAssistant } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [clients, setClients] = useState<UserProfile[]>([]);
   const [cases, setCases] = useState<Case[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +24,15 @@ export default function ClientManagement() {
   const [formData, setFormData] = useState({
     displayName: '', email: '', phone: '', cuit: '', dni: '', additionalInfo: '', role: 'client' as const
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    if (id && clients.length > 0) {
+      const found = clients.find(c => c.uid === id);
+      if (found) setViewingClient(found);
+    }
+  }, [location.search, clients]);
 
   useEffect(() => {
     const q = query(collection(db, 'users'), where('role', '==', 'client'));

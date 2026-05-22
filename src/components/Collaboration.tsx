@@ -3,6 +3,7 @@ import { collection, onSnapshot, query, addDoc, where, orderBy, updateDoc, doc, 
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Message, MessageAttachment, UserProfile, Case } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Send, User as UserIcon, MessageSquare, Users, Search, ChevronLeft, Trash2, MoreVertical, Paperclip, X, Briefcase, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
@@ -10,6 +11,7 @@ import { es } from 'date-fns/locale';
 
 export default function Collaboration() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [cases, setCases] = useState<Case[]>([]);
   const [clients, setClients] = useState<UserProfile[]>([]);
@@ -356,14 +358,22 @@ export default function Collaboration() {
                             : m.content
                         )}
                         {m.attachment && (
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            marginTop: m.content ? 8 : 0,
-                            padding: '7px 10px',
-                            background: isMe ? 'rgba(26,20,12,0.15)' : 'var(--paper-2)',
-                            border: `0.5px solid ${m.attachment.type === 'case' ? 'rgba(122,46,34,0.25)' : 'rgba(45,90,61,0.25)'}`,
-                            borderRadius: 'var(--r)',
-                          }}>
+                          <button
+                            type="button"
+                            onClick={() => navigate(m.attachment!.type === 'case' ? `/cases?id=${m.attachment!.id}` : `/clients?id=${m.attachment!.id}`)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8,
+                              marginTop: m.content ? 8 : 0,
+                              padding: '7px 10px', width: '100%',
+                              background: isMe ? 'rgba(26,20,12,0.15)' : 'var(--paper-2)',
+                              border: `0.5px solid ${m.attachment.type === 'case' ? 'rgba(122,46,34,0.25)' : 'rgba(45,90,61,0.25)'}`,
+                              borderRadius: 'var(--r)',
+                              cursor: 'pointer', textAlign: 'left',
+                              transition: 'opacity .1s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                          >
                             {m.attachment.type === 'case'
                               ? <Briefcase size={13} color="var(--oxblood)" style={{ flexShrink: 0 }} />
                               : <UserCheck size={13} color="var(--forest)" style={{ flexShrink: 0 }} />
@@ -376,7 +386,7 @@ export default function Collaboration() {
                                 {m.attachment.label}
                               </p>
                             </div>
-                          </div>
+                          </button>
                         )}
                       </div>
                       <span className="lm-mono" style={{ fontSize: 9.5, color: 'var(--ink-mute)', paddingLeft: 4 }}>

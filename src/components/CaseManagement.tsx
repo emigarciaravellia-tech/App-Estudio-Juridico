@@ -56,7 +56,12 @@ export default function CaseManagement() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('new') === 'true') setIsModalOpen(true);
-  }, [location.search]);
+    const id = params.get('id');
+    if (id && cases.length > 0) {
+      const found = cases.find(c => c.id === id);
+      if (found) { setViewingCase(found); setActiveTab('info'); }
+    }
+  }, [location.search, cases]);
 
   const [showClientSelector, setShowClientSelector] = useState(false);
   const [error, setError] = useState<string | null>(null);
