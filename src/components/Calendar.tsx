@@ -362,23 +362,38 @@ export default function Calendar() {
       </div>
 
       {/* Month/Period navigation */}
-      <div className="lm-card" style={{ padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => setCurrentDate(view === 'month' ? subMonths(currentDate, 1) : subDays(currentDate, 7))} style={{ background: 'none', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '5px 8px', cursor: 'pointer', color: 'var(--ink-3)' }}>
-          <ChevronLeft size={14} />
-        </button>
-        <h3 className="lm-display" style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 500, color: 'var(--ink)', margin: 0, textTransform: 'capitalize' }}>
-          {view === 'month'
-            ? format(currentDate, 'MMMM yyyy', { locale: es })
-            : view === 'agenda'
-            ? 'Próximos eventos'
-            : `Semana del ${format(startOfWeek(currentDate), "d 'de' MMMM", { locale: es })}`}
-        </h3>
-        <button onClick={() => setCurrentDate(new Date())} style={{ padding: '5px 10px', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', background: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 600, color: 'var(--oxblood)', fontFamily: 'var(--font-sans)' }}>
-          Hoy
-        </button>
-        <button onClick={() => setCurrentDate(view === 'month' ? addMonths(currentDate, 1) : addDays(currentDate, 7))} style={{ background: 'none', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '5px 8px', cursor: 'pointer', color: 'var(--ink-3)' }}>
-          <ChevronRight size={14} />
-        </button>
+      <div className="lm-card" style={{ padding: '10px 16px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => setCurrentDate(view === 'month' ? subMonths(currentDate, 1) : subDays(currentDate, 7))} style={{ background: 'none', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '5px 8px', cursor: 'pointer', color: 'var(--ink-3)' }}>
+            <ChevronLeft size={14} />
+          </button>
+          <h3 className="lm-display" style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 500, color: 'var(--ink)', margin: 0, textTransform: 'capitalize' }}>
+            {view === 'month'
+              ? format(currentDate, 'MMMM yyyy', { locale: es })
+              : view === 'agenda'
+              ? 'Próximos eventos'
+              : `Semana del ${format(startOfWeek(currentDate), "d 'de' MMMM", { locale: es })}`}
+          </h3>
+          <button onClick={() => setCurrentDate(new Date())} style={{ padding: '5px 10px', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', background: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 600, color: 'var(--oxblood)', fontFamily: 'var(--font-sans)' }}>
+            Hoy
+          </button>
+          <button onClick={() => setCurrentDate(view === 'month' ? addMonths(currentDate, 1) : addDays(currentDate, 7))} style={{ background: 'none', border: '0.5px solid var(--rule)', borderRadius: 'var(--r)', padding: '5px 8px', cursor: 'pointer', color: 'var(--ink-3)' }}>
+            <ChevronRight size={14} />
+          </button>
+        </div>
+
+        {/* Color legend */}
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', paddingTop: 10, marginTop: 10, borderTop: '0.5px solid var(--rule-soft)' }}>
+          {(Object.entries(TYPE_LABELS) as [string, string][]).map(([type, label]) => {
+            const cfg = EVENT_COLORS[type];
+            return (
+              <span key={type} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: cfg.dot, flexShrink: 0, display: 'inline-block' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', fontFamily: 'var(--font-sans)', letterSpacing: '0.03em' }}>{label}</span>
+              </span>
+            );
+          })}
+        </div>
       </div>
 
       {view === 'month' ? renderMonthView() : view === 'week' ? renderWeekView() : renderAgendaView()}
