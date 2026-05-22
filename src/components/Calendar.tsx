@@ -36,6 +36,7 @@ export default function Calendar() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [viewingEvent, setViewingEvent] = useState<Event | null>(null);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [cases, setCases] = useState<Case[]>([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -137,11 +138,14 @@ export default function Calendar() {
             const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isSelected = isSameDay(day, selectedDay);
             const isTodayDay = isToday(day);
+            const dayKey = format(day, 'yyyy-MM-dd');
+            const isExpanded = expandedDay === dayKey;
+            const visibleEvents = isExpanded ? dayEvents : dayEvents.slice(0, 3);
 
             return (
               <div
                 key={idx}
-                onClick={() => setSelectedDay(day)}
+                onClick={() => { setSelectedDay(day); setExpandedDay(null); }}
                 style={{
                   minHeight: 96,
                   padding: '6px 8px',
@@ -167,7 +171,7 @@ export default function Calendar() {
                   {format(day, 'd')}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {dayEvents.slice(0, 3).map(ev => {
+                  {visibleEvents.map(ev => {
                     const cfg = EVENT_COLORS[ev.type] ?? EVENT_COLORS['other'];
                     return (
                       <div
@@ -175,7 +179,7 @@ export default function Calendar() {
                         onClick={e => { e.stopPropagation(); setViewingEvent(ev); }}
                         style={{
                           fontSize: 10, fontWeight: 600, padding: '1px 5px',
-                          borderRadius: 3, truncate: 'hidden',
+                          borderRadius: 3,
                           background: cfg.bg, color: cfg.color,
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           cursor: 'pointer',
@@ -185,8 +189,21 @@ export default function Calendar() {
                       </div>
                     );
                   })}
-                  {dayEvents.length > 3 && (
-                    <span style={{ fontSize: 9.5, color: 'var(--ink-mute)', paddingLeft: 4 }}>+{dayEvents.length - 3} más</span>
+                  {!isExpanded && dayEvents.length > 3 && (
+                    <button
+                      onClick={e => { e.stopPropagation(); setExpandedDay(dayKey); setSelectedDay(day); }}
+                      style={{ fontSize: 9.5, color: 'var(--oxblood)', paddingLeft: 4, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 600, textAlign: 'left' }}
+                    >
+                      +{dayEvents.length - 3} más
+                    </button>
+                  )}
+                  {isExpanded && (
+                    <button
+                      onClick={e => { e.stopPropagation(); setExpandedDay(null); }}
+                      style={{ fontSize: 9.5, color: 'var(--ink-mute)', paddingLeft: 4, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'var(--font-sans)', textAlign: 'left' }}
+                    >
+                      ver menos ▲
+                    </button>
                   )}
                 </div>
               </div>
