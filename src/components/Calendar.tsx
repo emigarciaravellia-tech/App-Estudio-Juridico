@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Event, Case } from '../types';
@@ -36,8 +36,11 @@ export default function Calendar() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [viewingEvent, setViewingEvent] = useState<Event | null>(null);
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [cases, setCases] = useState<Case[]>([]);
+  // Evento pendiente a abrir al llegar desde dashboard/semáforo
+  const pendingEventId = useRef<string | null>(
+    (location.state as { openEventId?: string } | null)?.openEventId ?? null
+  );
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -57,6 +60,18 @@ export default function Calendar() {
     const params = new URLSearchParams(location.search);
     if (params.get('new') === 'true') setIsModalOpen(true);
   }, [location.search]);
+
+  // Abrir evento específico al navegar desde dashboard o semáforo
+  useEffect(() => {
+    if (!pendingEventId.current || events.length === 0) return;
+    const ev = events.find(e => e.id === pendingEventId.current);
+    if (ev) {
+      setCurrentDate(parseISO(ev.startTime)); // navega al mes del evento
+      setViewingEvent(ev);
+      pendingEventId.current = null;
+      window.history.replaceState({}, document.title); // limpia el state
+    }
+  }, [events]);
 
   useEffect(() => {
     const unsubEvents = onSnapshot(query(collection(db, 'events')), snap => {
@@ -138,16 +153,15 @@ export default function Calendar() {
             const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isSelected = isSameDay(day, selectedDay);
             const isTodayDay = isToday(day);
-            const dayKey = format(day, 'yyyy-MM-dd');
-            const isExpanded = expandedDay === dayKey;
-            const visibleEvents = isExpanded ? dayEvents : dayEvents.slice(0, 3);
+            const MAX_PILLS = 2;
 
             return (
               <div
                 key={idx}
-                onClick={() => { setSelectedDay(day); setExpandedDay(null); }}
+                onClick={() => setSelectedDay(day)}
                 style={{
-                  minHeight: 96,
+                  height: 104,          // altura FIJA — nunca crece
+                  overflow: 'hidden',
                   padding: '6px 8px',
                   borderRight: (idx + 1) % 7 !== 0 ? '0.5px solid var(--rule-soft)' : 'none',
                   borderBottom: idx < days.length - 7 ? '0.5px solid var(--rule-soft)' : 'none',
@@ -158,6 +172,7 @@ export default function Calendar() {
                   outlineOffset: -1.5,
                   zIndex: isSelected ? 1 : 0,
                   position: 'relative',
+                  boxSizing: 'border-box',
                 }}
               >
                 <div style={{
@@ -166,12 +181,12 @@ export default function Calendar() {
                   background: isTodayDay ? 'var(--oxblood)' : 'transparent',
                   fontSize: 12, fontWeight: isTodayDay ? 700 : isCurrentMonth ? 500 : 400,
                   color: isTodayDay ? '#fbf6e9' : isCurrentMonth ? 'var(--ink)' : 'var(--rule-2)',
-                  marginBottom: 4,
+                  marginBottom: 3,
                 }}>
                   {format(day, 'd')}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {visibleEvents.map(ev => {
+                  {dayEvents.slice(0, MAX_PILLS).map(ev => {
                     const cfg = EVENT_COLORS[ev.type] ?? EVENT_COLORS['other'];
                     return (
                       <div
@@ -184,25 +199,18 @@ export default function Calendar() {
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           cursor: 'pointer',
                         }}
+                        title={ev.title}
                       >
                         {format(parseISO(ev.startTime), 'HH:mm')} {ev.title}
                       </div>
                     );
                   })}
-                  {!isExpanded && dayEvents.length > 3 && (
+                  {dayEvents.length > MAX_PILLS && (
                     <button
-                      onClick={e => { e.stopPropagation(); setExpandedDay(dayKey); setSelectedDay(day); }}
+                      onClick={e => { e.stopPropagation(); setSelectedDay(day); }}
                       style={{ fontSize: 9.5, color: 'var(--oxblood)', paddingLeft: 4, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 600, textAlign: 'left' }}
                     >
-                      +{dayEvents.length - 3} más
-                    </button>
-                  )}
-                  {isExpanded && (
-                    <button
-                      onClick={e => { e.stopPropagation(); setExpandedDay(null); }}
-                      style={{ fontSize: 9.5, color: 'var(--ink-mute)', paddingLeft: 4, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'var(--font-sans)', textAlign: 'left' }}
-                    >
-                      ver menos ▲
+                      +{dayEvents.length - MAX_PILLS} más
                     </button>
                   )}
                 </div>

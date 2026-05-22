@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { collection, query, limit, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { collection, query, limit, orderBy, onSnapshot, where, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Case, Task, Event, Invoice } from '../types';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavigateFunction } from 'react-router-dom';
 import {
   Briefcase,
   CheckSquare,
@@ -172,12 +172,15 @@ export default function Dashboard() {
 
       {/* Frase de la semana */}
       <FraseSemanal />
+
+      {/* ── SEED TEMPORAL ── eliminar después de usar ── */}
+      <SeedButton uid={profile?.uid || ''} />
     </div>
   );
 }
 
 /* ── Hero "Ficha del día" ──────────────────────────────────── */
-function HeroCard({ item, navigate }: { item: AgendaItem; navigate: (to: string) => void }) {
+function HeroCard({ item, navigate }: { item: AgendaItem; navigate: NavigateFunction }) {
   const cfg = KIND_CONFIG[item.kind] || KIND_CONFIG.tarea;
   const Icon = cfg.icon;
 
@@ -283,7 +286,7 @@ function StatsStrip({ activeCases, pendingTasks, invoiceTotal, invoiceCount, hea
 }
 
 /* ── Agenda list ───────────────────────────────────────────── */
-function AgendaList({ items, navigate }: { items: AgendaItem[]; navigate: (to: string) => void }) {
+function AgendaList({ items, navigate }: { items: AgendaItem[]; navigate: NavigateFunction }) {
   return (
     <section className="lm-card" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{
@@ -318,7 +321,10 @@ function AgendaList({ items, navigate }: { items: AgendaItem[]; navigate: (to: s
             key={item.id}
             className="lm-row"
             style={{ gridTemplateColumns: '44px 1fr auto auto', gap: 14 }}
-            onClick={() => navigate(item.type === 'task' ? '/tasks' : '/calendar')}
+            onClick={() => item.type === 'task'
+              ? navigate('/tasks')
+              : navigate('/calendar', { state: { openEventId: item.id } })
+            }
           >
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-mute)', letterSpacing: '0.08em' }}>{mon.toUpperCase()}</div>
@@ -353,7 +359,7 @@ function AgendaList({ items, navigate }: { items: AgendaItem[]; navigate: (to: s
 }
 
 /* ── Activity feed ─────────────────────────────────────────── */
-function ActivityFeed({ cases, navigate }: { cases: Case[]; navigate: (to: string) => void }) {
+function ActivityFeed({ cases, navigate }: { cases: Case[]; navigate: NavigateFunction }) {
   return (
     <section className="lm-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '14px 20px', borderBottom: '0.5px solid var(--rule)' }}>
@@ -420,7 +426,7 @@ function SemaforoVencimientos({
   events, navigate,
 }: {
   events: Event[];
-  navigate: (to: string) => void;
+  navigate: NavigateFunction;
 }) {
   const today = new Date();
 
@@ -540,7 +546,7 @@ function SemaforoVencimientos({
                 {zone.items.slice(0, 5).map(item => (
                   <div
                     key={item.id}
-                    onClick={() => navigate(item.kind === 'tarea' ? '/tasks' : '/calendar')}
+                    onClick={() => navigate('/calendar', { state: { openEventId: item.id } })}
                     style={{
                       padding: '9px 16px',
                       borderBottom: '0.5px solid var(--rule-soft)',
@@ -646,6 +652,155 @@ function FraseSemanal() {
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── SEED TEMPORAL ────────────────────────────────────────────
+   Eliminar este componente después de usarlo una vez.
+   ─────────────────────────────────────────────────────────── */
+function SeedButton({ uid }: { uid: string }) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+
+  const seed = async () => {
+    if (!uid) { alert('Esperá a que cargue tu sesión'); return; }
+    setStatus('loading');
+    try {
+      const now = new Date();
+      const d = (days: number) => new Date(now.getTime() + days * 86400000).toISOString();
+      const ds = (days: number) => d(days).slice(0, 10);
+
+      // ── 5 Clientes ──────────────────────────────────────
+      const clientIds: string[] = [];
+      const clientes = [
+        { displayName: 'María González',    email: 'mgonzalez@mail.com',  phone: '351-111-2233', dni: '32456789', role: 'client' },
+        { displayName: 'Carlos Rodríguez',  email: 'crodriguez@mail.com', phone: '351-222-3344', dni: '28123456', role: 'client' },
+        { displayName: 'Laura Martínez',    email: 'lmartinez@mail.com',  phone: '351-333-4455', dni: '35789012', role: 'client' },
+        { displayName: 'Roberto Fernández', email: 'rfernandez@mail.com', phone: '351-444-5566', dni: '25654321', role: 'client' },
+        { displayName: 'Ana Pérez',         email: 'aperez@mail.com',     phone: '351-555-6677', dni: '40123456', role: 'client' },
+      ];
+      for (const c of clientes) {
+        const ref = doc(collection(db, 'users'));
+        await setDoc(ref, { ...c, uid: ref.id, createdAt: now.toISOString() });
+        clientIds.push(ref.id);
+      }
+
+      // ── 10 Expedientes ───────────────────────────────────
+      const cases = [
+        { caseNumber: '2024/001', caseTitle: 'González c/ González - Divorcio',          clientName: 'María González',    status: 'activo',     jurisdiction: 'Cordoba',     processType: 'juicio',        roleInProcess: 'actor',      opposingParty: 'Jorge González' },
+        { caseNumber: '2024/002', caseTitle: 'Rodríguez c/ Empresa SA - Laboral',         clientName: 'Carlos Rodríguez',  status: 'activo',     jurisdiction: 'Alta Gracia', processType: 'juicio',        roleInProcess: 'actor',      opposingParty: 'Empresa SA' },
+        { caseNumber: '2024/003', caseTitle: 'Sucesión Martínez',                          clientName: 'Laura Martínez',    status: 'activo',     jurisdiction: 'Cordoba',     processType: 'otro',          roleInProcess: 'asesoramiento', opposingParty: '' },
+        { caseNumber: '2024/004', caseTitle: 'Fernández c/ Municipalidad - Contencioso',  clientName: 'Roberto Fernández', status: 'activo',     jurisdiction: 'Cordoba',     processType: 'juicio',        roleInProcess: 'actor',      opposingParty: 'Municipalidad de Córdoba' },
+        { caseNumber: '2024/005', caseTitle: 'Pérez - Accidente de Tránsito',             clientName: 'Ana Pérez',         status: 'activo',     jurisdiction: 'Carlos Paz',  processType: 'juicio',        roleInProcess: 'actor',      opposingParty: 'Seguros XYZ SA' },
+        { caseNumber: '2024/006', caseTitle: 'López c/ Banco Nacional - Ejecución',       clientName: 'Hugo López',        status: 'paralizado', jurisdiction: 'Cordoba',     processType: 'juicio',        roleInProcess: 'demandado',  opposingParty: 'Banco Nacional' },
+        { caseNumber: '2024/007', caseTitle: 'Herrera - Asesoramiento Societario',        clientName: 'Silvia Herrera',    status: 'activo',     jurisdiction: 'Cordoba',     processType: 'asesoramiento', roleInProcess: 'asesoramiento', opposingParty: '' },
+        { caseNumber: '2024/008', caseTitle: 'Sánchez c/ Empleador - Despido',            clientName: 'Pablo Sánchez',     status: 'activo',     jurisdiction: 'Cordoba',     processType: 'juicio',        roleInProcess: 'actor',      opposingParty: 'Distribuidora Sur SRL' },
+        { caseNumber: '2023/009', caseTitle: 'Torres - Mediación Familiar',               clientName: 'Claudia Torres',    status: 'archivado',  jurisdiction: 'Jesus Maria', processType: 'mediacion',     roleInProcess: 'actor',      opposingParty: 'Martín Torres' },
+        { caseNumber: '2024/010', caseTitle: 'Díaz - Trámite Administrativo AFIP',        clientName: 'Ernesto Díaz',      status: 'activo',     jurisdiction: 'Cordoba',     processType: 'otro',          roleInProcess: 'asesoramiento', opposingParty: 'AFIP' },
+      ];
+      const caseIds: string[] = [];
+      for (const c of cases) {
+        const ref = await addDoc(collection(db, 'cases'), {
+          ...c, assignedLawyerId: uid, notes: '',
+          createdAt: d(-Math.floor(Math.random() * 60)),
+          updatedAt: d(-Math.floor(Math.random() * 5)),
+        });
+        caseIds.push(ref.id);
+      }
+
+      // ── 10 Tareas ────────────────────────────────────────
+      const tareas = [
+        { title: 'Presentar demanda inicial',         dueDate: ds(7),  caseIdx: 0 },
+        { title: 'Contestar traslado de la demanda',  dueDate: ds(3),  caseIdx: 1 },
+        { title: 'Enviar documentación al cliente',   dueDate: ds(1),  caseIdx: 2 },
+        { title: 'Preparar alegato final',            dueDate: ds(14), caseIdx: 3 },
+        { title: 'Renovar contrato de honorarios',   dueDate: ds(5),  caseIdx: 4 },
+        { title: 'Revisar pericia contable',          dueDate: ds(10), caseIdx: 5 },
+        { title: 'Notificar resolución al cliente',   dueDate: ds(0),  caseIdx: 6 },
+        { title: 'Preparar lista de testigos',        dueDate: ds(21), caseIdx: 7 },
+        { title: 'Gestionar oficio al registro',      dueDate: ds(4),  caseIdx: 8 },
+        { title: 'Verificar estado del expediente',   dueDate: ds(6),  caseIdx: 9 },
+      ];
+      for (const t of tareas) {
+        await addDoc(collection(db, 'tasks'), {
+          title: t.title,
+          description: '',
+          assignedUserId: uid,
+          dueDate: t.dueDate,
+          status: 'pending',
+          isPersonal: false,
+          caseId: caseIds[t.caseIdx],
+          createdAt: now.toISOString(),
+        });
+      }
+
+      // ── 10 Eventos ───────────────────────────────────────
+      const eventos = [
+        { title: 'Audiencia preliminar - González',           type: 'hearing',  days: 8  },
+        { title: 'Vencimiento contestación - Rodríguez',      type: 'deadline', days: 3  },
+        { title: 'Audiencia de conciliación - Fernández',     type: 'hearing',  days: 15 },
+        { title: 'Vencimiento recurso de apelación - Torres', type: 'deadline', days: 1  },
+        { title: 'Vencimiento ofrecimiento de prueba - Pérez',type: 'deadline', days: 5  },
+        { title: 'Vencimiento traslado pericia - López',      type: 'deadline', days: 12 },
+        { title: 'Audiencia de vista de causa - Sánchez',     type: 'hearing',  days: 25 },
+        { title: 'Vencimiento traslado - Díaz',               type: 'deadline', days: 8  },
+        { title: 'Reunión con cliente - Herrera',             type: 'meeting',  days: 4  },
+        { title: 'Vencimiento presentación memorial - Martínez', type: 'deadline', days: 20 },
+      ];
+      for (let i = 0; i < eventos.length; i++) {
+        const ev = eventos[i];
+        const start = new Date(now.getTime() + ev.days * 86400000);
+        start.setHours(10, 0, 0, 0);
+        const end = new Date(start.getTime() + 60 * 60000);
+        await addDoc(collection(db, 'events'), {
+          title: ev.title,
+          description: '',
+          type: ev.type,
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          assignedUserIds: [uid],
+          caseId: caseIds[i],
+          createdAt: now.toISOString(),
+        });
+      }
+
+      setStatus('done');
+    } catch (e) {
+      console.error(e);
+      setStatus('error');
+    }
+  };
+
+  return (
+    <div style={{
+      margin: '24px 0 8px',
+      padding: '16px 20px',
+      border: '1px dashed #c0392b',
+      borderRadius: 8,
+      background: '#fdf0f0',
+      display: 'flex', alignItems: 'center', gap: 16,
+    }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: '#c0392b', marginBottom: 4 }}>
+          ⚠ SEED TEMPORAL — eliminar después de usar
+        </div>
+        <div style={{ fontSize: 12, color: '#666' }}>
+          Crea 5 clientes · 10 expedientes · 10 tareas · 10 eventos de prueba
+        </div>
+      </div>
+      <button
+        onClick={seed}
+        disabled={status === 'loading' || status === 'done'}
+        style={{
+          padding: '8px 18px', borderRadius: 6, border: 'none', cursor: 'pointer',
+          background: status === 'done' ? '#2d6a2d' : status === 'error' ? '#c0392b' : '#333',
+          color: '#fff', fontSize: 13, fontWeight: 600,
+        }}
+      >
+        {status === 'idle' ? 'Crear datos de prueba' :
+         status === 'loading' ? 'Creando…' :
+         status === 'done' ? '✓ Listo' : '✗ Error (ver consola)'}
+      </button>
     </div>
   );
 }
