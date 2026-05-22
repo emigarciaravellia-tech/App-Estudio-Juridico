@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CaseCombobox from './CaseCombobox';
 import { collection, onSnapshot, query, addDoc, where, updateDoc, doc, deleteDoc, arrayUnion } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Task, Case, UserProfile } from '../types';
@@ -219,10 +220,11 @@ export default function TaskManagement() {
                 </div>
                 <div>
                   <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Vincular a expediente</label>
-                  <select className="lm-select" value={formData.caseId} onChange={e => setFormData({ ...formData, caseId: e.target.value })}>
-                    <option value="">Sin vincular</option>
-                    {cases.map(c => <option key={c.id} value={c.id}>{c.caseNumber} — {c.caseTitle}</option>)}
-                  </select>
+                  <CaseCombobox
+                    cases={cases}
+                    value={formData.caseId}
+                    onChange={caseId => setFormData({ ...formData, caseId })}
+                  />
                 </div>
 
                 <hr className="lm-divider" />

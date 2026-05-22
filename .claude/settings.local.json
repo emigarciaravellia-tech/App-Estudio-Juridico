@@ -14,7 +14,8 @@
       "Bash(npm run *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
       "Bash(git commit -m 'feat: semáforo muestra solo vencimientos procesales \\(tipo deadline\\) *)",
-      "Bash(git commit -m 'feat: navegación contextual desde dashboard al evento del calendario *)"
+      "Bash(git commit -m 'feat: navegación contextual desde dashboard al evento del calendario *)",
+      "Bash(git commit -m 'feat: buscador de expedientes en formularios de tarea y evento *)"
     ]
   }
 }

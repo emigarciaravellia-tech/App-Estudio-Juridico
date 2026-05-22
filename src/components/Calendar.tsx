@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import CaseCombobox from './CaseCombobox';
 import { collection, onSnapshot, query, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Event, Case } from '../types';
@@ -468,10 +469,11 @@ export default function Calendar() {
                   </div>
                   <div>
                     <label className="lm-eyebrow" style={{ display: 'block', marginBottom: 5 }}>Expediente</label>
-                    <select className="lm-select" value={formData.caseId} onChange={e => setFormData({ ...formData, caseId: e.target.value })}>
-                      <option value="">Sin vincular</option>
-                      {cases.map(c => <option key={c.id} value={c.id}>{c.caseNumber}</option>)}
-                    </select>
+                    <CaseCombobox
+                      cases={cases}
+                      value={formData.caseId}
+                      onChange={caseId => setFormData({ ...formData, caseId })}
+                    />
                   </div>
                 </div>
                 <div>
