@@ -16,8 +16,10 @@ import {
   Users,
   ArrowUpRight,
   AlertCircle,
+  Quote,
 } from 'lucide-react';
 import { format, isBefore, addDays, differenceInCalendarDays } from 'date-fns';
+import { getFraseSemanal } from '../data/frases';
 import { es } from 'date-fns/locale';
 
 type AgendaItem = {
@@ -47,6 +49,8 @@ export default function Dashboard() {
   const [pendingInvoiceTotal, setPendingInvoiceTotal] = useState(0);
   const [pendingInvoiceCount, setPendingInvoiceCount] = useState(0);
   const [hearingCount, setHearingCount] = useState(0);
+  const [semaforoTasks, setSemaforoTasks] = useState<Task[]>([]);
+  const [semaforoEvents, setSemaforoEvents] = useState<Event[]>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -82,6 +86,24 @@ export default function Dashboard() {
 
     // Stats: upcoming hearings this month
     getDocs(query(collection(db, 'events'), where('type', '==', 'hearing'))).then(s => setHearingCount(s.size));
+
+    // Semáforo: tareas pendientes en los próximos 30 días
+    const in30Days = addDays(new Date(), 30).toISOString().slice(0, 10);
+    getDocs(query(
+      collection(db, 'tasks'),
+      where('assignedUserId', '==', profile.uid),
+      where('status', '==', 'pending'),
+      orderBy('dueDate', 'asc'),
+      limit(50),
+    )).then(s => setSemaforoTasks(s.docs.map(d => ({ id: d.id, ...d.data() } as Task))));
+
+    getDocs(query(
+      collection(db, 'events'),
+      where('startTime', '>=', new Date().toISOString()),
+      where('startTime', '<=', addDays(new Date(), 30).toISOString()),
+      orderBy('startTime', 'asc'),
+      limit(50),
+    )).then(s => setSemaforoEvents(s.docs.map(d => ({ id: d.id, ...d.data() } as Event))));
 
     return () => { unsubCases(); unsubTasks(); unsubEvents(); };
   }, [profile]);
@@ -153,6 +175,12 @@ export default function Dashboard() {
         <AgendaList items={remaining} navigate={navigate} />
         <ActivityFeed cases={recentCases} navigate={navigate} />
       </div>
+
+      {/* Semáforo de vencimientos */}
+      <SemaforoVencimientos tasks={semaforoTasks} events={semaforoEvents} navigate={navigate} />
+
+      {/* Frase de la semana */}
+      <FraseSemanal />
     </div>
   );
 }
@@ -385,5 +413,259 @@ function ActivityFeed({ cases, navigate }: { cases: Case[]; navigate: (to: strin
         </a>
       </div>
     </section>
+  );
+}
+
+/* ── Semáforo de vencimientos ──────────────────────────────── */
+type SemaforoItem = {
+  id: string;
+  title: string;
+  date: string;
+  kind: 'tarea' | 'audiencia' | 'vencimiento' | 'reunión';
+  daysAway: number;
+};
+
+function SemaforoVencimientos({
+  tasks, events, navigate,
+}: {
+  tasks: Task[];
+  events: Event[];
+  navigate: (to: string) => void;
+}) {
+  const today = new Date();
+
+  const items: SemaforoItem[] = [
+    ...tasks
+      .filter(t => t.dueDate)
+      .map(t => ({
+        id: t.id,
+        title: t.title,
+        date: t.dueDate,
+        kind: 'tarea' as const,
+        daysAway: differenceInCalendarDays(new Date(t.dueDate + 'T12:00:00'), today),
+      })),
+    ...events.map(e => ({
+      id: e.id,
+      title: e.title,
+      date: e.startTime?.slice(0, 10) || '',
+      kind: (e.type === 'hearing' ? 'audiencia' : e.type === 'deadline' ? 'vencimiento' : 'reunión') as SemaforoItem['kind'],
+      daysAway: differenceInCalendarDays(new Date((e.startTime?.slice(0, 10) || '') + 'T12:00:00'), today),
+    })),
+  ]
+    .filter(i => i.date && i.daysAway >= 0 && i.daysAway <= 30)
+    .sort((a, b) => a.daysAway - b.daysAway);
+
+  const red    = items.filter(i => i.daysAway <= 7);
+  const yellow = items.filter(i => i.daysAway > 7 && i.daysAway <= 14);
+  const green  = items.filter(i => i.daysAway > 14);
+
+  const ZONES = [
+    {
+      label: 'Urgente',
+      sublabel: 'próximos 7 días',
+      items: red,
+      dot: '#c0392b',
+      soft: '#fdf0f0',
+      border: '#e8b4b4',
+    },
+    {
+      label: 'Próximo',
+      sublabel: '8 a 14 días',
+      items: yellow,
+      dot: '#b8860b',
+      soft: '#fdf9e8',
+      border: '#e8d89a',
+    },
+    {
+      label: 'Holgado',
+      sublabel: '15 a 30 días',
+      items: green,
+      dot: '#2d6a2d',
+      soft: '#f0f7f0',
+      border: '#a8cca8',
+    },
+  ] as const;
+
+  const kindLabel: Record<SemaforoItem['kind'], string> = {
+    tarea: 'Tarea',
+    audiencia: 'Audiencia',
+    vencimiento: 'Vcto.',
+    reunión: 'Reunión',
+  };
+
+  return (
+    <section className="lm-card" style={{ padding: 0, overflow: 'hidden', marginTop: 20 }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 20px',
+        borderBottom: '0.5px solid var(--rule)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div>
+          <div className="lm-eyebrow">Semáforo</div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 17, margin: '3px 0 0', color: 'var(--ink)' }}>
+            Vencimientos próximos · 30 días
+          </h3>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {ZONES.map(z => (
+            <span key={z.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--ink-3)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: z.dot, display: 'inline-block' }} />
+              {z.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 3 columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+        {ZONES.map((zone, zi) => (
+          <div
+            key={zone.label}
+            style={{
+              borderRight: zi < 2 ? '0.5px dashed var(--rule-2)' : 'none',
+              minHeight: 160,
+            }}
+          >
+            {/* Zone header */}
+            <div style={{
+              padding: '10px 16px 8px',
+              background: zone.soft,
+              borderBottom: `0.5px solid ${zone.border}`,
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: zone.dot, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: zone.dot }}>{zone.label}</div>
+                <div style={{ fontSize: 10, color: 'var(--ink-mute)', marginTop: 1 }}>{zone.sublabel}</div>
+              </div>
+              <span style={{
+                marginLeft: 'auto',
+                fontFamily: 'var(--font-display)',
+                fontSize: 22, lineHeight: 1,
+                color: zone.dot,
+              }}>
+                {zone.items.length}
+              </span>
+            </div>
+
+            {/* Items */}
+            {zone.items.length === 0 ? (
+              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--ink-mute)' }}>
+                <div style={{ fontSize: 20, marginBottom: 4 }}>✓</div>
+                <div style={{ fontSize: 11 }}>Sin vencimientos</div>
+              </div>
+            ) : (
+              <div>
+                {zone.items.slice(0, 5).map(item => (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate(item.kind === 'tarea' ? '/tasks' : '/calendar')}
+                    style={{
+                      padding: '9px 16px',
+                      borderBottom: '0.5px solid var(--rule-soft)',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'flex-start', gap: 8,
+                    }}
+                    className="lm-row-hover"
+                  >
+                    <span style={{
+                      marginTop: 2, flexShrink: 0,
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: zone.dot, opacity: 0.7,
+                    }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.title}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 2, alignItems: 'center' }}>
+                        <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: zone.dot }}>
+                          {kindLabel[item.kind]}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-mute)' }}>
+                          {item.daysAway === 0 ? 'HOY' : item.daysAway === 1 ? 'MAÑANA' : `en ${item.daysAway}d`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {zone.items.length > 5 && (
+                  <div style={{ padding: '8px 16px', fontSize: 11, color: 'var(--ink-mute)', textAlign: 'center' }}>
+                    +{zone.items.length - 5} más
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Frase de la semana ────────────────────────────────────── */
+function FraseSemanal() {
+  const frase = getFraseSemanal();
+
+  // Separar texto del autor si tiene " — "
+  const dashIndex = frase.lastIndexOf(' — ');
+  const texto = dashIndex !== -1 ? frase.slice(0, dashIndex) : frase;
+  const autor  = dashIndex !== -1 ? frase.slice(dashIndex + 3) : null;
+
+  // Número de semana para mostrar
+  const epoch = new Date('2024-01-01T00:00:00Z');
+  const semana = Math.floor((new Date().getTime() - epoch.getTime()) / (7 * 24 * 60 * 60 * 1000)) % 1000 + 1;
+
+  return (
+    <div style={{ marginTop: 20, marginBottom: 8 }}>
+      <div style={{
+        position: 'relative',
+        padding: '28px 32px 24px 40px',
+        borderTop: '0.5px solid var(--rule)',
+        borderBottom: '0.5px solid var(--rule)',
+      }}>
+        {/* Comilla decorativa */}
+        <Quote
+          size={28}
+          style={{
+            position: 'absolute', top: 20, left: 8,
+            color: 'var(--oxblood)', opacity: 0.18,
+          }}
+        />
+
+        <p style={{
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 16,
+          lineHeight: 1.55,
+          color: 'var(--ink-2)',
+          margin: '0 0 10px',
+          maxWidth: 760,
+        }}>
+          "{texto}"
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {autor && (
+            <span style={{
+              fontSize: 11.5, fontWeight: 600,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: 'var(--oxblood)',
+            }}>
+              {autor}
+            </span>
+          )}
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9.5,
+            color: 'var(--ink-mute)',
+            letterSpacing: '0.14em',
+            marginLeft: autor ? 0 : 'auto',
+          }}>
+            FRASE Nº {String(semana).padStart(3, '0')} · SEMANA {format(new Date(), 'ww/yyyy')}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
