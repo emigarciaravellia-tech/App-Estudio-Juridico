@@ -106,6 +106,12 @@ export interface Event {
   parentId?: string;
 }
 
+export interface MessageAttachment {
+  type: 'case' | 'client';
+  id: string;
+  label: string;
+}
+
 export interface Message {
   id: string;
   chatId: string;
@@ -114,6 +120,7 @@ export interface Message {
   content: string;
   timestamp: string;
   readBy: string[];
+  attachment?: MessageAttachment;
 }
 
 export interface DocumentMetadata {
